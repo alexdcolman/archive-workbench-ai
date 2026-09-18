@@ -41,12 +41,13 @@ Archive Workbench consulta las capacidades, crea el EXP-01 autorizado, ejecuta `
 
 ## Distribución administrada de Archive Workbench
 
-La distribución pública de Archive Workbench usa Docker, mientras Archive Workbench AI se ejecuta de forma nativa para aprovechar Metal/CUDA del host. Ambos procesos se coordinan mediante un **buzón local de trabajos** ubicado dentro de `ArchiveWorkbenchData/Settings/archive-workbench-ai-bridge`.
+La distribución pública de Archive Workbench usa Docker, mientras Archive Workbench AI se ejecuta de forma nativa para aprovechar Metal/CUDA del host. Ambos procesos se coordinan mediante un **buzón global por usuario** administrado por Archive Workbench AI. El bundle de Archive Workbench monta únicamente ese directorio en la ruta de bridge esperada dentro del contenedor.
 
-No se abre un servidor HTTP ni se publica un puerto del host. El lanzador de Archive Workbench inicia, cuando `aw-ai` está disponible, el compañero nativo con:
+No se abre un servidor HTTP ni se publica un puerto del host. El lanzador administrado de Archive Workbench descubre la instalación canónica de Archive Workbench AI, consulta la ruta global del bridge y arranca el compañero sin configuración manual. La superficie técnica equivalente es:
 
 ```bash
-aw-ai bridge start --root RUTA/ArchiveWorkbenchData/Settings/archive-workbench-ai-bridge
+aw-ai bridge path
+aw-ai bridge start
 ```
 
 El contenedor recibe `ARCHIVE_WORKBENCH_AI_BRIDGE_DIR=/workspace/Settings/archive-workbench-ai-bridge`. Cuando una persona inicia un análisis, Archive Workbench:
@@ -60,14 +61,18 @@ El contenedor recibe `ARCHIVE_WORKBENCH_AI_BRIDGE_DIR=/workspace/Settings/archiv
 
 El request no admite rutas del host ni nombres de archivo arbitrarios. Los nombres internos del job son fijos (`input.exp01.zip`, `request.json`, `result.zip`, `handoff.zip`). El compañero procesa trabajos secuencialmente y nunca recibe una ruta a SQLite.
 
-Comandos de administración:
+Comandos técnicos de administración:
 
 ```bash
-aw-ai bridge init --root RUTA
-aw-ai bridge start --root RUTA
-aw-ai bridge status --root RUTA --json
-aw-ai bridge stop --root RUTA
+aw-ai bridge path
+aw-ai bridge init
+aw-ai bridge start
+aw-ai bridge status --json
+aw-ai bridge cleanup --json
+aw-ai bridge stop
 ```
+
+Estos comandos son para desarrollo/diagnóstico; no forman parte del recorrido normal de una persona usuaria.
 
 La existencia del transporte no equivale todavía a declarar cerrada la distribución pública. Debe probarse con los launchers y las imágenes definitivas en las plataformas de release.
 

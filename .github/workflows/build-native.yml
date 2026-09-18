@@ -1,0 +1,112 @@
+name: Build Archive Workbench AI native candidates
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux-x64:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Build standalone binary
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip setuptools wheel pyinstaller
+          python -m pip install .
+          python -m PyInstaller --clean --onefile --name aw-ai \
+            --collect-data archive_workbench_ai packaging/aw_ai_entry.py
+          ./dist/aw-ai --version
+          ./dist/aw-ai setup --status-json > native-linux-status.json
+          ./dist/aw-ai bridge start --json > native-linux-bridge-start.json
+          ./dist/aw-ai bridge status --json > native-linux-bridge-status.json
+          ./dist/aw-ai bridge stop --json > native-linux-bridge-stop.json
+          VERSION=$(python -c 'import archive_workbench_ai; print(archive_workbench_ai.__version__)')
+          python packaging/linux/build_deb.py --binary dist/aw-ai --version "$VERSION" --output-dir native-dist
+          sha256sum native-dist/*.deb > native-dist/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: archive-workbench-ai-linux-x64
+          path: |
+            native-dist/*.deb
+            native-dist/SHA256SUMS.txt
+            native-linux-*.json
+
+  windows-x64:
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Build standalone binary
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip setuptools wheel pyinstaller
+          python -m pip install .
+          python -m PyInstaller --clean --onefile --name aw-ai --collect-data archive_workbench_ai packaging/aw_ai_entry.py
+          .\dist\aw-ai.exe --version
+          .\dist\aw-ai.exe setup --status-json | Out-File -Encoding utf8 native-windows-status.json
+          .\dist\aw-ai.exe bridge start --json | Out-File -Encoding utf8 native-windows-bridge-start.json
+          .\dist\aw-ai.exe bridge status --json | Out-File -Encoding utf8 native-windows-bridge-status.json
+          .\dist\aw-ai.exe bridge stop --json | Out-File -Encoding utf8 native-windows-bridge-stop.json
+          choco install innosetup --no-progress -y
+          $env:AWAI_VERSION = (python -c "import archive_workbench_ai; print(archive_workbench_ai.__version__)")
+          $env:AWAI_BINARY = (Resolve-Path .\dist\aw-ai.exe).Path
+          New-Item -ItemType Directory -Force native-dist | Out-Null
+          $env:AWAI_OUTPUT_DIR = (Resolve-Path .\native-dist).Path
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" packaging\windows\ArchiveWorkbenchAI.iss
+          Get-ChildItem native-dist\*.exe | ForEach-Object {
+            $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
+            "$hash  $($_.Name)"
+          } | Set-Content -Encoding ascii native-dist\SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: archive-workbench-ai-windows-x64
+          path: |
+            native-dist/*.exe
+            native-dist/SHA256SUMS.txt
+            native-windows-*.json
+
+  macos:
+    strategy:
+      matrix:
+        include:
+          - runner: macos-15-intel
+            artifact: archive-workbench-ai-macos-intel
+          - runner: macos-15
+            artifact: archive-workbench-ai-macos-arm64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Build app and DMG
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip setuptools wheel pyinstaller
+          python -m pip install .
+          python -m PyInstaller --clean --onefile --name aw-ai \
+            --collect-data archive_workbench_ai packaging/aw_ai_entry.py
+          ./dist/aw-ai --version
+          ./dist/aw-ai setup --status-json > native-macos-status.json
+          ./dist/aw-ai bridge start --json > native-macos-bridge-start.json
+          ./dist/aw-ai bridge status --json > native-macos-bridge-status.json
+          ./dist/aw-ai bridge stop --json > native-macos-bridge-stop.json
+          VERSION=$(python -c 'import archive_workbench_ai; print(archive_workbench_ai.__version__)')
+          mkdir -p native-dist
+          packaging/macos/build_app.sh dist/aw-ai "$VERSION" native-dist
+          shasum -a 256 native-dist/*.dmg > native-dist/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: |
+            native-dist/*.dmg
+            native-dist/SHA256SUMS.txt
+            native-macos-*.json

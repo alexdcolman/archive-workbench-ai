@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Archive Workbench AI Setup
+Comment=Preparar el motor local de análisis asistido de Archive Workbench
+Exec=/opt/archive-workbench-ai/aw-ai setup
+Icon=applications-science
+Terminal=false
+Categories=Utility;Science;
+StartupNotify=true

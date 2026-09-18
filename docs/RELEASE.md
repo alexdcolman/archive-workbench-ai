@@ -69,3 +69,15 @@ La validación manual final no debe adelantarse a imágenes locales o artefactos
 La primera candidata de imágenes que incorpora el puente administrado se identifica como `1.3.0-rc1-cpu` y `1.3.0-rc1-gpu`. Su publicación no convierte todavía a 1.3.0 en versión estable ni modifica `releases/latest`.
 
 El workflow de contenedores debe ejecutarse manualmente desde el commit de la rama candidata y conservar, además del tag, el digest inmutable de cada imagen como artefacto de GitHub Actions. Las validaciones manuales finales deben realizarse sobre esos mismos tags/digests publicados: Windows CPU, Ubuntu CPU y Ubuntu GPU NVIDIA. El sitio público de Archive Workbench se actualiza después de que esas validaciones queden verdes.
+
+## Gate de recorrido sin terminal
+
+Antes del primer release administrado, la ruta normal debe completarse sin terminal, activación de venv, `PATH`, variables de entorno ni rutas manuales. Los artefactos descargables deben probar instalación/preparación, apertura, análisis, propuesta pendiente, actualización/reparación y cierre. La matriz final obligatoria es Windows CPU, Ubuntu CPU y Ubuntu GPU NVIDIA. El sitio público de Archive Workbench se actualiza después de cerrar estos recorridos.
+
+## Gates de distribución nativa administrada
+
+Antes de cualquier release público de Archive Workbench AI deben quedar verdes los workflows `build-native.yml` y `build-linux-nvidia-runtime.yml`. Los paquetes nativos deben ejecutar el smoke del binario congelado y conservar checksums. El runtime NVIDIA candidato debe construirse desde el commit fijado, registrarse por SHA-256 y luego incorporarse al catálogo en un corte posterior.
+
+No iniciar la validación manual final desde repositorios o venvs. Esa validación se hace sólo desde los instaladores/paquetes descargables candidatos y, para Archive Workbench, desde el bundle administrado que conserva los digests publicados de las imágenes 1.3.0-rc1.
+
+Antes de promover los instaladores a release público, registrar también el estado de firma de código. Las candidatas técnicas pueden construirse sin firma, pero no se debe describir como instalación sin fricción una app macOS sin firma/notarización ni un instalador Windows que todavía active advertencias de reputación o firma. Este gate de distribución es independiente de la funcionalidad del bridge y de la matriz manual obligatoria Windows CPU + Ubuntu CPU/GPU.

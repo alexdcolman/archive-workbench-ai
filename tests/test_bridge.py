@@ -11,6 +11,7 @@ import uuid
 from archive_workbench_ai.bridge import (
     BRIDGE_PROTOCOL,
     bridge_capabilities,
+    cleanup_bridge_jobs,
     initialize_bridge,
     process_job,
     process_pending,
@@ -50,7 +51,8 @@ class BridgeTests(unittest.TestCase):
             report = initialize_bridge(root)
             self.assertEqual(report["protocol"], BRIDGE_PROTOCOL)
             self.assertTrue((root / "secret.token").is_file())
-            caps = json.loads((root / "capabilities.json").read_text(encoding="utf-8"))
+            self.assertFalse((root / "capabilities.json").exists())
+            caps = bridge_capabilities()
             self.assertEqual(caps["bridge_protocol"], BRIDGE_PROTOCOL)
             self.assertEqual(caps["plugin"], "archive-workbench-ai")
             self.assertNotIn("authorization", caps)
@@ -125,6 +127,45 @@ class BridgeTests(unittest.TestCase):
         self.assertEqual(caps["bridge_protocol"], BRIDGE_PROTOCOL)
         self.assertIn("archive-workbench-ai/0.1", caps["protocols"])
         self.assertIn("archive_workbench_ai_result_handoff/0.1", caps["handoff_schema_ids"])
+
+    def test_cleanup_removes_consumed_job_immediately(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "bridge"
+            job = self._job(root)
+            (job / "response.json").write_text('{"status":"ok"}', encoding="utf-8")
+            (job / "consumed").write_text("done\n", encoding="utf-8")
+            result = cleanup_bridge_jobs(root)
+            self.assertEqual(result["consumed"], 1)
+            self.assertFalse(job.exists())
+
+    def test_cleanup_retains_recent_failure_and_ages_out_old_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "bridge"
+            job = self._job(root)
+            (job / "response.json").write_text('{"status":"error"}', encoding="utf-8")
+            self.assertEqual(cleanup_bridge_jobs(root, now=job.stat().st_mtime + 60)["failed"], 0)
+            self.assertTrue(job.exists())
+            result = cleanup_bridge_jobs(root, now=job.stat().st_mtime + 8 * 24 * 60 * 60)
+            self.assertEqual(result["failed"], 1)
+            self.assertFalse(job.exists())
+
+    def test_frozen_start_uses_current_executable_without_python_module_switch(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "bridge"
+            fake_process = mock.Mock()
+            with mock.patch.object(__import__("archive_workbench_ai.bridge", fromlist=["sys"]).sys, "frozen", True, create=True), \
+                 mock.patch("archive_workbench_ai.bridge.subprocess.Popen", return_value=fake_process) as popen, \
+                 mock.patch("archive_workbench_ai.bridge.bridge_status") as status:
+                status.side_effect = [
+                    {"running": False, "pid": None},
+                    {"running": True, "pid": 123, "root": str(root), "protocol": BRIDGE_PROTOCOL, "initialized": True, "pending_jobs": 0, "status_file": str(root / "bridge-status.json"), "log_file": str(root / "bridge.log")},
+                ]
+                from archive_workbench_ai.bridge import start_bridge
+                start_bridge(root, wait_seconds=0.2)
+            command = popen.call_args.args[0]
+            self.assertEqual(command[0], __import__("sys").executable)
+            self.assertEqual(command[1:3], ["bridge", "serve"])
+            self.assertNotIn("-m", command)
 
 
 if __name__ == "__main__":

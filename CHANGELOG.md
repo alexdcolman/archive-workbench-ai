@@ -1,3 +1,20 @@
+## 0.1.0.dev24 — Setup gráfico y candidatas nativas
+
+- Agrega Archive Workbench AI Setup como interfaz local sin terminal para estado y preparación explícita de perfiles.
+- Impide que la ruta administrada compile Linux/NVIDIA desde fuente; el rechazo precede cualquier reparación destructiva.
+- Agrega workflows para construir/smokear candidatas nativas de Ubuntu, Windows y macOS.
+- Agrega workflow separado para construir el runtime CUDA Linux x64 desde el commit fijado de llama.cpp.
+- Mantiene runtime/modelos fuera del ejecutable y conserva el bridge global de dev23.
+
+## 0.1.0.dev23 — base de distribución administrada sin terminal
+
+- fija un buzón global por usuario para el bridge;
+- agrega ruta administrada consultable mediante `aw-ai bridge path`;
+- hace compatible el arranque del companion con ejecutables congelados;
+- elimina automáticamente jobs consumidos y acota la retención de fallos/resultados no consumidos;
+- define ubicaciones canónicas de instalación por sistema para la futura aplicación nativa;
+- documenta como gate obligatorio la validación manual sin terminal.
+
 # Changelog
 
 ## Unreleased

@@ -20,10 +20,14 @@ from .catalog import PROFILE_DEFAULT_MODELS, get_model_spec
 from .complete_analysis import analyze_exp01
 from .errors import InvalidInputError, RuntimeUnavailableError
 from .hashing import sha256_path
+from .managed_paths import default_bridge_root
 
 BRIDGE_PROTOCOL = "archive-workbench-ai-bridge/0.1"
 BRIDGE_DIRNAME = "archive-workbench-ai-bridge"
 MAX_INPUT_BYTES = 8 * 1024 * 1024 * 1024
+FAILED_JOB_RETENTION_SECONDS = 7 * 24 * 60 * 60
+UNCONSUMED_JOB_RETENTION_SECONDS = 7 * 24 * 60 * 60
+STAGING_RETENTION_SECONDS = 24 * 60 * 60
 
 
 def _utc_now() -> str:
@@ -58,8 +62,8 @@ def bridge_capabilities() -> dict[str, Any]:
     }
 
 
-def initialize_bridge(root: Path) -> dict[str, Any]:
-    root = root.expanduser().resolve()
+def initialize_bridge(root: Path | None = None) -> dict[str, Any]:
+    root = (root or default_bridge_root()).expanduser().resolve()
     jobs = root / "jobs"
     jobs.mkdir(parents=True, exist_ok=True)
     secret_path = root / "secret.token"
@@ -72,7 +76,6 @@ def initialize_bridge(root: Path) -> dict[str, Any]:
     secret = secret_path.read_text(encoding="utf-8").strip()
     if len(secret) < 32:
         raise RuntimeUnavailableError("El secreto del puente local es inválido")
-    _atomic_json(root / "capabilities.json", bridge_capabilities())
     return {
         "status": "ready",
         "root": str(root),
@@ -173,6 +176,52 @@ def process_job(job_dir: Path, *, backend: str = "llama_cpp") -> dict[str, Any]:
     return response
 
 
+def cleanup_bridge_jobs(root: Path, *, now: float | None = None) -> dict[str, int]:
+    """Remove consumed jobs and age out abandoned diagnostics/staging safely."""
+
+    root = root.expanduser().resolve()
+    jobs = root / "jobs"
+    counts = {"consumed": 0, "failed": 0, "unconsumed": 0, "staging": 0}
+    if not jobs.is_dir():
+        return counts
+    current = time.time() if now is None else float(now)
+    for path in tuple(jobs.iterdir()):
+        if not path.is_dir():
+            continue
+        try:
+            age = max(0.0, current - path.stat().st_mtime)
+        except OSError:
+            continue
+        if path.name.startswith("."):
+            if age >= STAGING_RETENTION_SECONDS:
+                shutil.rmtree(path, ignore_errors=True)
+                counts["staging"] += 1
+            continue
+        try:
+            uuid.UUID(path.name)
+        except ValueError:
+            continue
+        if (path / "consumed").is_file():
+            shutil.rmtree(path, ignore_errors=True)
+            counts["consumed"] += 1
+            continue
+        response_path = path / "response.json"
+        if not response_path.is_file():
+            continue
+        try:
+            response = json.loads(response_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            response = {}
+        status = response.get("status") if isinstance(response, dict) else None
+        if status == "error" and age >= FAILED_JOB_RETENTION_SECONDS:
+            shutil.rmtree(path, ignore_errors=True)
+            counts["failed"] += 1
+        elif status == "ok" and age >= UNCONSUMED_JOB_RETENTION_SECONDS:
+            shutil.rmtree(path, ignore_errors=True)
+            counts["unconsumed"] += 1
+    return counts
+
+
 def _valid_job_dirs(root: Path) -> list[Path]:
     jobs = root / "jobs"
     if not jobs.is_dir():
@@ -224,8 +273,8 @@ def _pid_alive(pid: int) -> bool:
     return True
 
 
-def bridge_status(root: Path) -> dict[str, Any]:
-    root = root.expanduser().resolve()
+def bridge_status(root: Path | None = None) -> dict[str, Any]:
+    root = (root or default_bridge_root()).expanduser().resolve()
     pid_path = root / "bridge.pid"
     pid = None
     if pid_path.is_file():
@@ -236,7 +285,7 @@ def bridge_status(root: Path) -> dict[str, Any]:
     return {
         "root": str(root),
         "protocol": BRIDGE_PROTOCOL,
-        "initialized": (root / "secret.token").is_file() and (root / "capabilities.json").is_file(),
+        "initialized": (root / "secret.token").is_file(),
         "running": bool(pid and _pid_alive(pid)),
         "pid": pid,
         "pending_jobs": len(_valid_job_dirs(root)),
@@ -245,8 +294,8 @@ def bridge_status(root: Path) -> dict[str, Any]:
     }
 
 
-def serve_bridge(root: Path, *, poll_seconds: float = 0.5, once: bool = False) -> int:
-    root = root.expanduser().resolve()
+def serve_bridge(root: Path | None = None, *, poll_seconds: float = 0.5, once: bool = False) -> int:
+    root = (root or default_bridge_root()).expanduser().resolve()
     initialize_bridge(root)
     lock_path = root / "bridge.lock"
     try:
@@ -269,10 +318,12 @@ def serve_bridge(root: Path, *, poll_seconds: float = 0.5, once: bool = False) -
         os.write(fd, f"{os.getpid()}\n".encode("ascii"))
         os.close(fd)
         (root / "bridge.pid").write_text(f"{os.getpid()}\n", encoding="utf-8")
+        _atomic_json(root / "capabilities.json", bridge_capabilities())
         _atomic_json(root / "bridge-status.json", {
             "status": "running", "pid": os.getpid(), "started_at": _utc_now(), "protocol": BRIDGE_PROTOCOL
         })
         while not stop:
+            cleanup_bridge_jobs(root)
             count = process_pending(root)
             _atomic_json(root / "bridge-status.json", {
                 "status": "running", "pid": os.getpid(), "updated_at": _utc_now(),
@@ -288,12 +339,13 @@ def serve_bridge(root: Path, *, poll_seconds: float = 0.5, once: bool = False) -
         })
         (root / "bridge.pid").unlink(missing_ok=True)
         lock_path.unlink(missing_ok=True)
+        (root / "capabilities.json").unlink(missing_ok=True)
         signal.signal(signal.SIGTERM, old_term)
         signal.signal(signal.SIGINT, old_int)
 
 
-def start_bridge(root: Path, *, wait_seconds: float = 10.0) -> dict[str, Any]:
-    root = root.expanduser().resolve()
+def start_bridge(root: Path | None = None, *, wait_seconds: float = 10.0) -> dict[str, Any]:
+    root = (root or default_bridge_root()).expanduser().resolve()
     initialize_bridge(root)
     status = bridge_status(root)
     if status["running"]:
@@ -314,10 +366,19 @@ def start_bridge(root: Path, *, wait_seconds: float = 10.0) -> dict[str, Any]:
     else:
         kwargs["start_new_session"] = True
     try:
-        subprocess.Popen(
-            [sys.executable, "-m", "archive_workbench_ai.cli", "bridge", "serve", "--root", str(root)],
-            **kwargs,
-        )
+        if getattr(sys, "frozen", False):
+            command = [sys.executable, "bridge", "serve", "--root", str(root)]
+        else:
+            command = [
+                sys.executable,
+                "-m",
+                "archive_workbench_ai.cli",
+                "bridge",
+                "serve",
+                "--root",
+                str(root),
+            ]
+        subprocess.Popen(command, **kwargs)
     finally:
         log.close()
     deadline = time.monotonic() + wait_seconds
@@ -329,11 +390,12 @@ def start_bridge(root: Path, *, wait_seconds: float = 10.0) -> dict[str, Any]:
     raise RuntimeUnavailableError(f"El puente no inició. Revisá {log_path}")
 
 
-def stop_bridge(root: Path, *, wait_seconds: float = 10.0) -> dict[str, Any]:
-    root = root.expanduser().resolve()
+def stop_bridge(root: Path | None = None, *, wait_seconds: float = 10.0) -> dict[str, Any]:
+    root = (root or default_bridge_root()).expanduser().resolve()
     status = bridge_status(root)
     pid = status.get("pid")
     if not status["running"] or not isinstance(pid, int):
+        (root / "capabilities.json").unlink(missing_ok=True)
         return {**status, "status": "not_running"}
     try:
         os.kill(pid, signal.SIGTERM)

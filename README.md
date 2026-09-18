@@ -32,17 +32,18 @@ Los modelos no se incluyen dentro del repositorio ni del paquete de Archive Work
 
 ## Requisitos
 
-- Python 3.11 o posterior.
+La distribución administrada pública no requerirá Python instalado por la persona usuaria. Python 3.11 o posterior sólo es requisito para instalación desde fuente y desarrollo.
+
 - Espacio suficiente para el runtime y los modelos elegidos.
-- Para aceleración NVIDIA en Linux: controlador NVIDIA, CUDA Toolkit, Git y CMake durante la preparación del runtime.
+- Para aceleración NVIDIA en Linux: controlador NVIDIA compatible. La distribución administrada no compila CUDA, Git ni CMake en la computadora usuaria.
 - Para aceleración NVIDIA en Windows: una GPU y controlador compatibles con la variante CUDA publicada por `llama.cpp`.
 - En macOS, el runtime nativo utiliza Metal cuando la plataforma lo permite.
 
 La ruta de instalación existe para Linux, Windows y macOS. La validación de calidad y rendimiento cerrada del perfil H24 se realizó sobre Linux con NVIDIA RTX 3090. El perfil L12 tiene selección lógica cerrada, pero la validación física específica sobre una GPU de 12 GB continúa pendiente.
 
-## Instalación técnica
+## Instalación
 
-Mientras no exista un release público estable, el repositorio puede instalarse desde fuente:
+Archive Workbench AI Setup ya está implementado como interfaz local sin terminal. Los instaladores nativos siguen en preparación y deben superar sus smokes de empaquetado antes del primer release público. Mientras el proyecto siga en pre-release, la instalación desde fuente siguiente es exclusivamente para desarrollo y diagnóstico:
 
 ```bash
 git clone https://github.com/alexdcolman/archive-workbench-ai.git
@@ -80,9 +81,15 @@ aw-ai doctor --json
 
 La guía completa por plataforma está en [`docs/INSTALACION.md`](docs/INSTALACION.md).
 
+### Archive Workbench AI Setup
+
+La distribución administrada abre **Archive Workbench AI Setup** como una interfaz local en el navegador, escuchando sólo en `127.0.0.1`. Desde allí se consulta el estado del runtime, los modelos y el compañero local, y se inicia explícitamente la preparación de L12/H24 o una reparación. Abrir el Setup no descarga ni modifica nada por sí mismo.
+
+En Linux/NVIDIA, el Setup administrado bloquea cualquier compilación desde fuente: hasta que el runtime CUDA precompilado y verificado quede publicado en el catálogo, esa preparación se informa como pendiente en lugar de exigir una toolchain local.
+
 ## Uso con Archive Workbench
 
-Cuando Archive Workbench y Archive Workbench AI están instalados en el mismo entorno de host, Archive Workbench detecta `aw-ai` en `PATH`. También puede indicarse explícitamente:
+En la distribución administrada, Archive Workbench descubre Archive Workbench AI en su ubicación de instalación canónica e inicia el compañero local automáticamente. `PATH` y la variable siguiente se conservan únicamente como overrides para desarrollo/diagnóstico:
 
 ```bash
 export ARCHIVE_WORKBENCH_AI_EXECUTABLE=/ruta/a/aw-ai
@@ -92,7 +99,7 @@ El recorrido visible se realiza desde **Análisis asistido** en Archive Workbenc
 
 La frontera entre ambos proyectos permanece en EXP-01 y el handoff versionado. Archive Workbench AI no importa módulos privados de Archive Workbench ni escribe en su SQLite.
 
-En la distribución administrada con Docker, Archive Workbench usa un buzón local compartido bajo `ArchiveWorkbenchData/Settings/archive-workbench-ai-bridge`. El contenedor deposita allí únicamente el EXP-01 autorizado y parámetros acotados; el compañero nativo procesa el trabajo y devuelve `result.zip` + `handoff.zip`. No se abre ningún puerto ni se expone SQLite. Véase [`docs/INTEGRACION_ARCHIVE_WORKBENCH.md`](docs/INTEGRACION_ARCHIVE_WORKBENCH.md).
+En la distribución administrada con Docker, Archive Workbench monta únicamente el buzón global por usuario administrado por Archive Workbench AI. El contenedor deposita allí únicamente el EXP-01 autorizado y parámetros acotados; el compañero nativo procesa el trabajo y devuelve `result.zip` + `handoff.zip`. No se abre ningún puerto ni se expone SQLite. Véase [`docs/INTEGRACION_ARCHIVE_WORKBENCH.md`](docs/INTEGRACION_ARCHIVE_WORKBENCH.md).
 
 ## Perfiles y modelos
 

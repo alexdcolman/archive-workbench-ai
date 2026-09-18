@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "archive-workbench-ai"
-version = "0.1.0.dev22"
+version = "0.1.0.dev24"
 description = "Local assisted-analysis engine for Archive Workbench"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -37,6 +37,7 @@ Issues = "https://github.com/alexdcolman/archive-workbench-ai/issues"
 
 [project.scripts]
 aw-ai = "archive_workbench_ai.cli:main"
+aw-ai-setup = "archive_workbench_ai.setup_entry:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

@@ -1,10 +1,12 @@
 # Instalación
 
-Archive Workbench AI se instala como un componente separado de Archive Workbench. El paquete Python, el runtime `llama.cpp` y los modelos tienen ciclos de instalación y actualización independientes.
+Archive Workbench AI se instala como un componente separado de Archive Workbench. El ejecutable de la aplicación, el runtime `llama.cpp` y los modelos tienen ciclos de instalación y actualización independientes.
 
-## 1. Instalar Archive Workbench AI
+La ruta pública administrada no requiere Python ni terminal. Archive Workbench AI Setup ya implementa la preparación gráfica de runtime/modelo y el estado del compañero local. Los paquetes nativos todavía deben construirse y validarse como candidatas antes del primer release público. Las instrucciones desde fuente de esta sección son sólo para desarrollo y diagnóstico.
 
-Requiere Python 3.11 o posterior. En un release público, la ruta preferida será instalar el wheel publicado con ese release. Para una instalación desde el repositorio:
+## 1. Instalación técnica desde fuente
+
+Requiere Python 3.11 o posterior:
 
 ```bash
 git clone https://github.com/alexdcolman/archive-workbench-ai.git
@@ -31,28 +33,28 @@ aw-ai --version
 aw-ai capabilities --json
 ```
 
+
+## Archive Workbench AI Setup
+
+El Setup administrado es una interfaz local abierta en el navegador por el ejecutable nativo. Escucha únicamente en `127.0.0.1`, no usa recursos web externos y requiere una autorización efímera para las acciones que modifican la instalación. La vista de estado es pasiva: abrirla no instala runtime, no descarga modelos y no inicia inferencia.
+
+Las acciones visibles permiten preparar L12/H24, comprobar o reparar el runtime, activar el compañero local y descargar un diagnóstico. Sólo una operación de instalación se ejecuta a la vez.
+
 ## 2. Instalar el runtime local
 
-El comando recomendado es:
+En instalación técnica, el comando es:
 
 ```bash
 aw-ai runtime install --variant auto
 ```
 
-`auto` selecciona una variante según el sistema y el hardware detectado. La distribución actual fija `llama.cpp b10903`, commit `481c65f091f74c5e7089dd0a3a1cc6b50cced31e`. Los binarios descargados se verifican por SHA-256 antes de instalarse.
+Archive Workbench AI Setup ofrece la operación equivalente mediante interfaz gráfica en la distribución administrada. `auto` selecciona una variante según el sistema y el hardware detectado. La distribución actual fija `llama.cpp b10903`, commit `481c65f091f74c5e7089dd0a3a1cc6b50cced31e`. Los binarios descargados se verifican por SHA-256 antes de instalarse.
 
 ### Linux
 
 En CPU x86_64 o arm64 se utiliza el binario publicado por `llama.cpp` para Ubuntu.
 
-En NVIDIA, el release fijado no publica un binario CUDA de host equivalente al requerido por este proyecto. `aw-ai runtime install --variant nvidia` compila la revisión fijada desde fuente y requiere:
-
-- Git;
-- CMake;
-- CUDA Toolkit con `nvcc`;
-- un compilador compatible con esa toolchain.
-
-La compilación conserva el commit fijado y activa CUDA. El controlador NVIDIA pertenece al sistema anfitrión.
+En NVIDIA, el release upstream fijado no publica un binario CUDA de host equivalente al requerido por este proyecto. La ruta técnica desde fuente todavía puede compilar la revisión fijada con Git, CMake, CUDA Toolkit y un compilador compatible. **Archive Workbench AI Setup no ejecuta esa compilación.** El workflow administrado construye fuera del equipo usuario un runtime NVIDIA candidato; sólo después de verificarlo y fijar su SHA-256 se incorporará al catálogo. El controlador NVIDIA seguirá perteneciendo al sistema anfitrión.
 
 ### Windows
 
@@ -80,7 +82,7 @@ Puede cambiarse con `AW_AI_DATA_HOME` o `AW_AI_RUNTIME_HOME`.
 
 ## 3. Descargar un modelo
 
-Los pesos no vienen incluidos. Por ejemplo, para H24:
+Los pesos no vienen incluidos. En la distribución administrada, Archive Workbench AI Setup realiza la descarga explícita elegida por la persona usuaria y conserva la verificación de integridad. En instalación técnica, por ejemplo para H24:
 
 ```bash
 aw-ai models pull 'ggml-org/gemma-4-26B-A4B-it-GGUF:Q4_0'
@@ -104,21 +106,11 @@ aw-ai doctor --json
 
 ## 5. Integración con Archive Workbench
 
-En una instalación nativa/técnica, Archive Workbench puede descubrir `aw-ai` por `PATH`. También puede fijarse la ruta:
+La distribución administrada usa un buzón global por usuario bajo el directorio de datos de Archive Workbench AI. El launcher de Archive Workbench encuentra la instalación nativa canónica, inicia el compañero y monta únicamente ese buzón en Docker. No hace falta configurar `PATH` ni variables de entorno en el recorrido de usuario.
 
-Linux/macOS:
+`PATH` y `ARCHIVE_WORKBENCH_AI_EXECUTABLE` se conservan sólo para desarrollo/diagnóstico.
 
-```bash
-export ARCHIVE_WORKBENCH_AI_EXECUTABLE=/ruta/a/.venv/bin/aw-ai
-```
-
-Windows PowerShell:
-
-```powershell
-$env:ARCHIVE_WORKBENCH_AI_EXECUTABLE = "C:\ruta\a\.venv\Scripts\aw-ai.exe"
-```
-
-Las imágenes Docker administradas de Archive Workbench todavía no incluyen un puente hacia el proceso nativo del host. No se debe presentar esa combinación como cerrada hasta implementar y validar dicho puente.
+El bridge puede consultarse técnicamente con `aw-ai bridge status`; esto no forma parte de la validación manual de usuario.
 
 ## 6. Funcionamiento offline
 
@@ -129,14 +121,6 @@ Después de instalar runtime y modelos, la inferencia no necesita red. Los coman
 El código conserva lectura de las variables `AW_AI01_*` y, cuando corresponde, del directorio histórico `archive-workbench-ai01` para permitir una transición sin volver a descargar pesos. Las instalaciones nuevas deben usar `AW_AI_*` y `archive-workbench-ai`.
 
 
-## Integración con la distribución administrada de Archive Workbench
+## Integración administrada
 
-Una vez instalado `aw-ai`, los launchers de Archive Workbench pueden iniciar automáticamente el compañero local. Si el ejecutable no está en `PATH`, puede indicarse su ruta en `ARCHIVE_WORKBENCH_AI_EXECUTABLE`.
-
-El compañero usa como buzón la carpeta `ArchiveWorkbenchData/Settings/archive-workbench-ai-bridge` del bundle de Archive Workbench. Puede comprobarse manualmente con:
-
-```bash
-aw-ai bridge status --root /ruta/a/ArchiveWorkbenchData/Settings/archive-workbench-ai-bridge --json
-```
-
-La inferencia sigue ejecutándose en el host; Docker sólo intercambia paquetes mediante la carpeta compartida.
+El compañero local usa por defecto `aw-ai bridge path` para resolver su buzón global. Archive Workbench monta ese directorio dentro del contenedor y sólo intercambia EXP-01, result y handoff. El bridge no abre un puerto de red ni accede a SQLite. Los trabajos consumidos se eliminan automáticamente; fallos y resultados no consumidos tienen retención acotada para diagnóstico/recuperación.

@@ -1,0 +1,62 @@
+name: Build pinned Linux NVIDIA runtime candidate
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-linux-x64:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - name: Free disk space for CUDA candidate build
+        shell: bash
+        run: |
+          df -h /
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc || true
+          docker system prune -af || true
+          df -h /
+      - name: Build llama.cpp b10903 CUDA runtime without host CUDA toolkit
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p runtime-dist
+          docker run --rm \
+            -v "$PWD/runtime-dist:/out" \
+            nvidia/cuda:12.8.1-devel-ubuntu24.04 \
+            bash -lc '
+              set -euxo pipefail
+              apt-get update
+              DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends git cmake build-essential ca-certificates
+              git clone https://github.com/ggml-org/llama.cpp.git /src
+              git -C /src checkout --detach 481c65f091f74c5e7089dd0a3a1cc6b50cced31e
+              test "$(git -C /src rev-parse HEAD)" = "481c65f091f74c5e7089dd0a3a1cc6b50cced31e"
+              cmake -S /src -B /build \
+                -DGGML_CUDA=ON \
+                -DGGML_NATIVE=OFF \
+                -DGGML_CUDA_FA_QUANTS="q4_0-q4_0;q8_0-q8_0;f16-f16;bf16-bf16"
+              cmake --build /build --config Release --target llama-server -j2
+              mkdir -p /stage/bin /stage/lib
+              cp /build/bin/llama-server /stage/bin/llama-server-bin
+              find /build/bin -maxdepth 1 -type f -name "*.so*" -exec cp -a {} /stage/lib/ \;
+              for pattern in libcudart.so libcublas.so libcublasLt.so libnvJitLink.so; do
+                find /usr/local/cuda -type f -o -type l | grep "/${pattern}" | head -n 20 | while read -r f; do cp -aL "$f" /stage/lib/ || true; done
+              done
+              cat > /stage/llama-server <<"EOF"
+          #!/bin/sh
+          HERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+          export LD_LIBRARY_PATH="$HERE/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+          exec "$HERE/bin/llama-server-bin" "$@"
+          EOF
+              chmod +x /stage/llama-server /stage/bin/llama-server-bin
+              tar -C /stage -czf /out/llama-b10903-bin-ubuntu-cuda-12.8-x64.tar.gz .
+              sha256sum /out/llama-b10903-bin-ubuntu-cuda-12.8-x64.tar.gz > /out/SHA256SUMS.txt
+            '
+          test -s runtime-dist/llama-b10903-bin-ubuntu-cuda-12.8-x64.tar.gz
+          cat runtime-dist/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: llama-b10903-linux-nvidia-x64-candidate
+          path: runtime-dist/*

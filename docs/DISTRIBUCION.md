@@ -7,7 +7,7 @@ Archive Workbench AI se distribuye de forma modular. El objetivo es que una actu
 La distribución separa cuatro piezas:
 
 1. **Archive Workbench**: aplicación archivística y responsable de selección, autorización, persistencia y revisión.
-2. **Archive Workbench AI**: paquete Python y CLI `aw-ai`.
+2. **Archive Workbench AI**: aplicación nativa administrada; el paquete Python/CLI queda como superficie técnica.
 3. **Runtime**: una revisión fijada de `llama.cpp` con `llama-server`.
 4. **Modelos**: pesos multimodales descargados por separado.
 
@@ -19,7 +19,8 @@ EXP-01 y el handoff versionado son la frontera contractual. Archive Workbench AI
 | --- | --- | --- | --- |
 | Linux | x86_64 | CPU | binario upstream verificado |
 | Linux | arm64 | CPU | binario upstream verificado |
-| Linux | x86_64 / arm64 | NVIDIA | compilación de fuente fijada |
+| Linux | x86_64 | NVIDIA | runtime administrado precompilado candidato; hash pendiente de fijar |
+| Linux | arm64 | NVIDIA | no declarado para el primer release administrado |
 | Windows | x64 | CPU | binario upstream verificado |
 | Windows | ARM64 | CPU | binario upstream verificado |
 | Windows | x64 | NVIDIA | binario CUDA 12.4 + runtime CUDA verificados |
@@ -61,7 +62,7 @@ Una nueva versión de cualquiera de estos componentes no obliga por sí sola a i
 
 ## Actualizaciones
 
-Actualizar el paquete Python no debe borrar runtime ni modelos. Cambiar el runtime requiere una acción explícita. Cambiar de modelo requiere una descarga explícita.
+Actualizar la aplicación nativa no debe borrar runtime ni modelos. Cambiar o reparar el runtime requiere una acción explícita. Cambiar de modelo requiere una descarga explícita. El paquete Python permanece como superficie técnica.
 
 Antes de promover una nueva revisión de `llama.cpp`, deben repetirse los gates de runtime pertinentes. Antes de cambiar el modelo por defecto de un perfil, debe existir evidencia comparable que justifique el cambio.
 
@@ -69,6 +70,12 @@ Antes de promover una nueva revisión de `llama.cpp`, deben repetirse los gates 
 
 Archive Workbench se distribuye actualmente mediante imágenes Docker CPU/GPU. Archive Workbench AI, en cambio, necesita ejecutarse como proceso nativo para aprovechar adecuadamente las aceleraciones del host, en particular Metal en macOS y las toolchains NVIDIA propias de cada sistema.
 
-Por ello, Archive Workbench AI no se copia dentro del contenedor de Archive Workbench. La integración administrada usa un **compañero local del host** y un buzón de trabajos dentro de `ArchiveWorkbenchData/Settings/archive-workbench-ai-bridge`. El contenedor sólo intercambia EXP-01, parámetros acotados, `result.zip` y handoff mediante esa carpeta compartida. No hay puerto de red, rutas arbitrarias ni acceso a SQLite.
+Por ello, Archive Workbench AI no se copia dentro del contenedor de Archive Workbench. La integración administrada usa un **compañero local del host** y un buzón global por usuario administrado por Archive Workbench AI y montado de forma acotada dentro del contenedor. El contenedor sólo intercambia EXP-01, parámetros acotados, `result.zip` y handoff mediante esa carpeta compartida. No hay puerto de red, rutas arbitrarias ni acceso a SQLite.
 
-Los launchers administrados de Archive Workbench pueden iniciar el compañero cuando encuentran `aw-ai` (o cuando se define `ARCHIVE_WORKBENCH_AI_EXECUTABLE`). La integración sigue en estado pre-release hasta validar esos launchers con las imágenes definitivas de Windows CPU, Ubuntu CPU y Ubuntu GPU NVIDIA, y completar la matriz adicional que se declare soportada.
+Los launchers administrados de Archive Workbench deben descubrir la instalación canónica de Archive Workbench AI e iniciar el compañero sin configuración manual. `PATH` y `ARCHIVE_WORKBENCH_AI_EXECUTABLE` quedan como overrides técnicos. La integración sigue en estado pre-release hasta validar esos launchers con las imágenes definitivas de Windows CPU, Ubuntu CPU y Ubuntu GPU NVIDIA, y completar la matriz adicional que se declare soportada.
+
+## Construcción de artefactos nativos
+
+Las candidatas nativas se construyen en GitHub Actions sobre runners de la plataforma correspondiente. El workflow produce un `.deb` para Ubuntu x64, un instalador por usuario para Windows x64 y DMG para macOS Intel/Apple Silicon. Cada job ejecuta smoke del binario congelado (`--version`, estado de Setup y ciclo `bridge start/status/stop`) antes de publicar el artefacto de Actions.
+
+El runtime NVIDIA de Linux se construye en un workflow separado dentro de una imagen de desarrollo CUDA, a partir del commit fijado de `llama.cpp`. La construcción no usa la GPU ni la toolchain de la computadora usuaria. El artefacto resultante no entra al catálogo hasta obtener su SHA-256 y superar el smoke material en Ubuntu/NVIDIA.

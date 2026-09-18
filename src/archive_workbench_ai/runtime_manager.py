@@ -257,7 +257,12 @@ def _build_linux_nvidia(root: Path, package: RuntimePackage) -> dict[str, object
     return _write_marker(root, package=package, executable=executable, source="source-build")
 
 
-def install_runtime(*, variant: str = "auto", force: bool = False) -> dict[str, object]:
+def install_runtime(
+    *,
+    variant: str = "auto",
+    force: bool = False,
+    allow_source_build: bool = True,
+) -> dict[str, object]:
     system = normalize_system()
     machine = normalize_machine(system=system)
     effective_variant = recommended_variant(system, machine) if variant == "auto" else variant
@@ -265,6 +270,11 @@ def install_runtime(*, variant: str = "auto", force: bool = False) -> dict[str, 
     if package is None:
         raise RuntimeUnavailableError(
             f"No hay un runtime preparado para {system}/{machine} con variante {effective_variant}."
+        )
+    if package.source_build and not allow_source_build:
+        raise RuntimeUnavailableError(
+            "El runtime NVIDIA administrado todavía no está publicado para esta plataforma. "
+            "Archive Workbench AI Setup no compila toolchains en la computadora usuaria."
         )
     root = runtime_home()
     if root.exists() and force:

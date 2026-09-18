@@ -10,7 +10,14 @@ from pathlib import Path
 from . import PHASE, PROTOCOL_VERSION, __version__
 from .benchmark import run_benchmark
 from .benchmark_job import extracted_benchmark_job, prepare_benchmark_job
-from .bridge import bridge_status, initialize_bridge, serve_bridge, start_bridge, stop_bridge
+from .bridge import (
+    bridge_status,
+    cleanup_bridge_jobs,
+    initialize_bridge,
+    serve_bridge,
+    start_bridge,
+    stop_bridge,
+)
 from .complete_analysis import analyze_exp01
 from .catalog import BOOTSTRAP_MODEL, MODEL_CATALOG, PROFILE_DEFAULT_MODELS, get_model_spec
 from .errors import InvalidInputError, PluginError, RuntimeUnavailableError
@@ -21,6 +28,8 @@ from .protocol import load_request
 from .result_bundle import build_result_bundle
 from .runtime import PINNED_LLAMA_BUILD, PINNED_LLAMA_COMMIT, PINNED_LLAMA_TAG, detect_runtime, gpu_info
 from .runtime_manager import install_runtime, runtime_installation_report
+from .setup_app import serve_setup, setup_status
+from .managed_paths import default_bridge_root, managed_executable_candidates
 
 
 def _print_json(payload: object) -> None:
@@ -149,22 +158,37 @@ def _parser() -> argparse.ArgumentParser:
 
     bridge = sub.add_parser("bridge", help="Administra el puente local con Archive Workbench en Docker")
     bridge_sub = bridge.add_subparsers(dest="bridge_command", required=True)
+    bridge_path = bridge_sub.add_parser("path", help="Muestra la ruta administrada del puente")
+    bridge_path.add_argument("--json", action="store_true")
     bridge_init = bridge_sub.add_parser("init", help="Inicializa el buzón local compartido")
-    bridge_init.add_argument("--root", required=True, type=Path)
+    bridge_init.add_argument("--root", type=Path, default=None)
     bridge_init.add_argument("--json", action="store_true")
     bridge_status_cmd = bridge_sub.add_parser("status", help="Consulta el estado del compañero local")
-    bridge_status_cmd.add_argument("--root", required=True, type=Path)
+    bridge_status_cmd.add_argument("--root", type=Path, default=None)
     bridge_status_cmd.add_argument("--json", action="store_true")
     bridge_start = bridge_sub.add_parser("start", help="Inicia el compañero local en segundo plano")
-    bridge_start.add_argument("--root", required=True, type=Path)
+    bridge_start.add_argument("--root", type=Path, default=None)
     bridge_start.add_argument("--json", action="store_true")
     bridge_stop = bridge_sub.add_parser("stop", help="Detiene el compañero local")
-    bridge_stop.add_argument("--root", required=True, type=Path)
+    bridge_stop.add_argument("--root", type=Path, default=None)
     bridge_stop.add_argument("--json", action="store_true")
+    bridge_cleanup = bridge_sub.add_parser("cleanup", help="Limpia trabajos consumidos o vencidos")
+    bridge_cleanup.add_argument("--root", type=Path, default=None)
+    bridge_cleanup.add_argument("--json", action="store_true")
     bridge_serve = bridge_sub.add_parser("serve", help="Ejecuta el compañero local en primer plano")
-    bridge_serve.add_argument("--root", required=True, type=Path)
+    bridge_serve.add_argument("--root", type=Path, default=None)
     bridge_serve.add_argument("--poll-seconds", type=float, default=0.5)
     bridge_serve.add_argument("--once", action="store_true")
+
+
+    managed = sub.add_parser("managed", help="Consulta rutas de la distribución administrada")
+    managed_sub = managed.add_subparsers(dest="managed_command", required=True)
+    managed_paths = managed_sub.add_parser("paths")
+    managed_paths.add_argument("--json", action="store_true")
+
+    setup = sub.add_parser("setup", help="Abre Archive Workbench AI Setup")
+    setup.add_argument("--no-browser", action="store_true")
+    setup.add_argument("--status-json", action="store_true")
 
     models = sub.add_parser("models", help="Administra/consulta modelos")
     models_sub = models.add_subparsers(dest="models_command", required=True)
@@ -290,6 +314,13 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command == "bridge":
+            if args.bridge_command == "path":
+                root = default_bridge_root()
+                if args.json:
+                    _print_json({"root": str(root)})
+                else:
+                    print(root)
+                return 0
             if args.bridge_command == "init":
                 payload = initialize_bridge(args.root)
             elif args.bridge_command == "status":
@@ -298,6 +329,9 @@ def main(argv: list[str] | None = None) -> int:
                 payload = start_bridge(args.root)
             elif args.bridge_command == "stop":
                 payload = stop_bridge(args.root)
+            elif args.bridge_command == "cleanup":
+                root = args.root or default_bridge_root()
+                payload = {"root": str(root), "removed": cleanup_bridge_jobs(root)}
             elif args.bridge_command == "serve":
                 return serve_bridge(args.root, poll_seconds=args.poll_seconds, once=args.once)
             else:
@@ -307,6 +341,23 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
             return 0
+
+        if args.command == "managed" and args.managed_command == "paths":
+            payload = {
+                "bridge_root": str(default_bridge_root()),
+                "executable_candidates": [str(path) for path in managed_executable_candidates()],
+            }
+            if args.json:
+                _print_json(payload)
+            else:
+                print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+            return 0
+
+        if args.command == "setup":
+            if args.status_json:
+                _print_json(setup_status())
+                return 0
+            return serve_setup(open_browser=not args.no_browser)
 
         if args.command == "models":
             if args.models_command == "list":
