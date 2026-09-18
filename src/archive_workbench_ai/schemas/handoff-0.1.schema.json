@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "archive-workbench-ai/handoff-0.1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "package_type",
+    "schema_version",
+    "protocol",
+    "producer",
+    "source",
+    "policy",
+    "proposals_path",
+    "proposals_sha256",
+    "proposal_count"
+  ],
+  "properties": {
+    "package_type": {"const": "archive_workbench_ai_result_handoff"},
+    "schema_version": {"const": "0.1"},
+    "protocol": {"const": "archive-workbench-ai/0.1"},
+    "proposal_count": {"type": "integer", "minimum": 1},
+    "policy": {
+      "type": "object",
+      "required": ["application", "automatic_apply", "human_review_required"],
+      "properties": {
+        "application": {"const": "proposed_only"},
+        "automatic_apply": {"const": false},
+        "human_review_required": {"const": true}
+      }
+    }
+  }
+}

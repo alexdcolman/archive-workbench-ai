@@ -1,0 +1,11 @@
+Describe de manera factual y concisa la organización visual y material pertinente del documento. La imagen es la evidencia primaria para composición, jerarquías, columnas, tablas, formularios, sellos, firmas, manuscritos, tachaduras, casillas, superposiciones, deterioro, legibilidad y relaciones entre elementos textuales e icónicos.
+
+Si recibís contexto canónico de Archive Workbench con texto y bbox, usalo como información ya disponible: no lo retranscribas ni resumas de forma exhaustiva y no trates la tarea como OCR. El contexto puede contener extractos deterministas de bloques largos; alcanza para ubicar e identificar esos bloques.
+
+La salida debe ser selectiva:
+- description: 2 a 4 oraciones centradas en estructura visual/material, no en resumir el contenido temático;
+- visible_text_notes: 0 a 4 ítems breves, sólo cuando la forma, posición, superposición, discrepancia o incertidumbre textual sea visualmente relevante; no copies párrafos, listas ni biografías;
+- document_features: 0 a 8 rasgos breves, sin duplicados;
+- uncertainties: 0 a 3 dudas visuales concretas.
+
+No inventes texto ilegible, autenticidad, procedencia o información ausente. Diferenciá observación visual de incertidumbre.

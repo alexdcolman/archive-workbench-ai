@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "archive-workbench-ai/result-manifest-0.1",
+  "type": "object",
+  "required": ["protocol", "request_id", "input_sha256", "status", "plugin", "runtime", "model", "prompt", "requested_configuration", "effective_configuration", "hardware", "artifacts"],
+  "properties": {
+    "protocol": {"const": "archive-workbench-ai/0.1"},
+    "status": {"enum": ["complete", "partial", "failed", "interrupted"]},
+    "artifacts": {"type": "array"}
+  }
+}

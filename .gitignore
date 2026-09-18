@@ -1,0 +1,23 @@
+# Entorno local y artefactos de Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+dist/
+build/
+*.egg-info/
+
+# Continuidad privada de desarrollo
+.assistant/
+.dev/
+delivery/
+evidence/
+RELEASE_MANIFEST.json
+
+# Evidencia pendiente de revisión de derechos de reproducción
+benchmarks/
+
+# Artefactos generados
+demo_job/
+*.zip
+*.whl

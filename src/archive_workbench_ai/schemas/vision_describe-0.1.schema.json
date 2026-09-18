@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "archive-workbench-ai/vision_describe-0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["description", "visible_text_notes", "document_features", "uncertainties"],
+  "properties": {
+    "description": {"type": "string"},
+    "visible_text_notes": {"type": "array", "items": {"type": "string"}},
+    "document_features": {"type": "array", "items": {"type": "string"}},
+    "uncertainties": {"type": "array", "items": {"type": "string"}}
+  }
+}
