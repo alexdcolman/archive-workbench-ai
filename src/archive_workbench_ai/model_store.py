@@ -8,6 +8,7 @@ import time
 import urllib.error
 import urllib.request
 
+from . import __version__
 from .catalog import BOOTSTRAP_MODEL, ModelFile, ModelSpec, model_dir
 from .errors import InvalidInputError, RuntimeUnavailableError
 
@@ -15,7 +16,7 @@ _CHUNK_SIZE = 1024 * 1024
 _RETRYABLE_HTTP = {408, 425, 429, 500, 502, 503, 504}
 _MAX_ATTEMPTS = 6
 _DEFAULT_RETRY_DELAYS = (2, 5, 10, 20, 40, 80)
-_USER_AGENT = "archive-workbench-ai/0.1.0.dev20"
+_USER_AGENT = f"archive-workbench-ai/{__version__}"
 
 
 def _sha256(path: Path) -> str:

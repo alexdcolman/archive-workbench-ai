@@ -1,31 +1,48 @@
 # Protocolo `archive-workbench-ai/0.1`
 
-La implementación vigente admite únicamente `vision_describe/0.1` sobre 1–3 assets de un paquete EXP-01 (`page`, `region` o `figure`). El protocolo AI no cambia en dev16.
+El protocolo 0.1 define la frontera de bajo nivel entre un paquete EXP-01 y una tarea ejecutada por Archive Workbench AI. El uso cotidiano desde Archive Workbench se realiza mediante `aw-ai analyze`, que administra esta capa internamente.
 
-## EXP-01 admitidos
+## Tarea disponible
 
-- **1.0:** compatible para evidencia histórica y jobs visuales sin contexto espacial textual.
-- **1.1:** contrato preferido desde Archive Workbench 1.2.0. Además de los assets visuales, `context/objects.jsonl` puede aportar texto canónico, `geometry` y `bbox` normalizado por objeto textual.
+La tarea pública actual es `vision_describe/0.1` sobre assets de tipo `page`, `region` o `figure`.
 
-Para EXP-01 1.1 Archive Workbench AI valida:
+Un request 0.1 admite entre uno y tres targets. Ese límite pertenece al contrato de bajo nivel. `aw-ai analyze` puede recorrer un EXP-01 completo, dividirlo internamente en requests compatibles y producir un único result bundle y un único handoff consolidados.
 
-- SHA-256 del ZIP completo;
-- `package_type`;
-- `schema_version`;
-- identidad/tipo de cada target;
-- SHA-256 y tamaño del asset seleccionado;
-- SHA-256 de `context/objects.jsonl`;
-- contrato `object_geometry` del manifest;
-- `bbox` en espacio `normalized`, formato `x_y_width_height`.
+## EXP-01
 
-El plugin no abre SQLite ni rutas internas del proyecto. La asociación entre imagen y texto espacial se deriva sólo del paquete EXP-01.
+Se admiten:
+
+- **EXP-01 1.0**, para compatibilidad con evidencia histórica y jobs visuales sin contexto espacial textual;
+- **EXP-01 1.1**, formato preferido de Archive Workbench 1.2.0, con posibilidad de incluir texto canónico y geometría mediante `context/objects.jsonl`.
+
+Para EXP-01 1.1 se valida la identidad de los targets, hashes y tamaños de assets, el contexto declarado y el contrato de geometría.
+
+Archive Workbench AI procesa sólo el contenido del paquete. No abre rutas internas del proyecto Archive Workbench ni su base SQLite.
 
 ## Semántica de `vision_describe/0.1`
 
-La imagen es evidencia primaria de percepción visual/documental. Si existe contexto canónico 1.1, el modelo recibe texto + bbox como información ya disponible. No debe hacer OCR redundante ni ser premiado por retranscribir exhaustivamente el texto canónico. `visible_text_notes` queda reservado para texto cuya forma, posición, superposición, discrepancia o incertidumbre sea relevante visualmente.
+La imagen es evidencia primaria para la descripción visual/documental. Cuando EXP-01 1.1 incluye texto canónico localizado, ese texto se trata como contexto ya disponible y no como OCR a rehacer.
 
-El contexto textual por target se serializa de manera determinista y se limita a 12.000 caracteres para preservar margen de inferencia. `effective_configuration` registra `exp01_context_objects` y `exp01_context_truncated`.
+La tarea se concentra en estructura material y visual, sellos, firmas, manuscritos, casillas, superposiciones, deterioro, jerarquía y relaciones espaciales. `visible_text_notes` se reserva para texto cuya forma, posición, discrepancia o incertidumbre sea visualmente relevante.
 
-`result.zip` conserva `manifest.json`, `results/items.jsonl`, `prompts/effective_prompt.txt`, `metrics/runtime.json` y `raw/responses.jsonl`.
+El contexto se serializa de manera determinista y puede truncarse para preservar margen de inferencia. La configuración efectiva registra esa decisión para mantener trazabilidad.
 
-`benchmark prepare` sigue pudiendo construir un EXP-01 1.0 válido desde 1–3 imágenes locales; ese comando sirve para pruebas visuales aisladas y no reemplaza una exportación 1.1 producida por Archive Workbench.
+## Resultado
+
+Un result bundle conserva, entre otros elementos:
+
+- manifiesto de la corrida;
+- resultados estructurados por target;
+- prompt efectivo;
+- métricas de runtime;
+- respuestas crudas necesarias para diagnóstico y trazabilidad.
+
+## Handoff
+
+`archive_workbench_ai_result_handoff/0.1` es el contrato que Archive Workbench consume para presentar propuestas. El handoff conserva la relación con el EXP-01, el resultado, el modelo y el runtime utilizados.
+
+Su política es siempre propositiva. El handoff no autoriza a Archive Workbench AI a modificar la base de datos y no equivale a una aceptación humana.
+
+## Red
+
+La ejecución de `run`, `analyze` y benchmarks con componentes ya instalados usa únicamente el runtime local. Las descargas de runtime o modelos son operaciones explícitas y separadas.

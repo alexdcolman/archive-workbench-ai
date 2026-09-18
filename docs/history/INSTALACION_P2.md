@@ -1,5 +1,7 @@
 # Instalación y benchmark P2
 
+> **Documento histórico.** Conserva el estado y la evidencia de una fase previa de desarrollo. No contiene las instrucciones vigentes de instalación ni el estado actual del release. Para uso actual, consulte `../INSTALACION.md`, `../DISTRIBUCION.md` y el `README.md` del repositorio.
+
 P2 conserva la venv y el runtime `llama.cpp b10903 / 481c65f` de P1. No instala nada dentro del repositorio de Archive Workbench.
 
 ## Actualización del plugin

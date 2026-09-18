@@ -1,5 +1,7 @@
 # AI-01 — benchmark P1/P2: evidencia, resultados y estado de evaluación
 
+> **Documento histórico.** Conserva el estado y la evidencia de una fase previa de desarrollo. No contiene las instrucciones vigentes de instalación ni el estado actual del release. Para uso actual, consulte `../INSTALACION.md`, `../DISTRIBUCION.md` y el `README.md` del repositorio.
+
 > Nota de nombre: **AI-01** era la denominación de desarrollo. El proyecto se denomina actualmente **Archive Workbench AI**. Los nombres de artefactos e identificadores históricos de esta evidencia se conservan sin reescribir.
 
 

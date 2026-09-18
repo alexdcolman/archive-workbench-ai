@@ -1,5 +1,7 @@
 # Instalación P0
 
+> **Documento histórico.** Conserva el estado y la evidencia de una fase previa de desarrollo. No contiene las instrucciones vigentes de instalación ni el estado actual del release. Para uso actual, consulte `../INSTALACION.md`, `../DISTRIBUCION.md` y el `README.md` del repositorio.
+
 P0 requiere sólo Python 3.11 o superior. No requiere CUDA, `llama.cpp`, GPU ni acceso a red.
 
 ```bash

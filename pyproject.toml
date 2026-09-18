@@ -4,12 +4,36 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "archive-workbench-ai"
-version = "0.1.0.dev20"
-description = "External assisted-analysis engine for Archive Workbench"
+version = "0.1.0.dev22"
+description = "Local assisted-analysis engine for Archive Workbench"
 readme = "README.md"
 requires-python = ">=3.11"
-authors = [{name = "Archive Workbench project"}]
+license = {file = "LICENSE"}
+authors = [
+  {name = "Alex Colman"},
+  {name = "Grupo de Investigación en Archivos de la Represión (GIAR)"},
+]
+keywords = ["archives", "digital humanities", "local AI", "document analysis"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+  "Operating System :: MacOS",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = ["Pillow>=10"]
+
+[project.urls]
+Homepage = "https://github.com/alexdcolman/archive-workbench-ai"
+Repository = "https://github.com/alexdcolman/archive-workbench-ai"
+Issues = "https://github.com/alexdcolman/archive-workbench-ai/issues"
+"Archive Workbench" = "https://github.com/alexdcolman/archive-workbench"
 
 [project.scripts]
 aw-ai = "archive_workbench_ai.cli:main"

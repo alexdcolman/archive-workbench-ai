@@ -1,83 +1,165 @@
 # Archive Workbench AI
 
-Motor externo e independiente de análisis asistido para Archive Workbench para ejecutar y comparar `vision_describe/0.1` mediante runtimes/modelos locales.
+Archive Workbench AI es el motor local de análisis asistido de [Archive Workbench](https://github.com/alexdcolman/archive-workbench). Se ejecuta como un componente separado: recibe un paquete de exportación de Archive Workbench, procesa sus imágenes con un modelo multimodal local y devuelve propuestas que Archive Workbench presenta para revisión humana.
 
-P0 validó el protocolo con backend simulado. P1 cerró el circuito real con `llama.cpp` + MiniCPM-V 4.6 sobre RTX 3090. P2 cerró la selección lógica de modelos y el soporte de contexto espacial de EXP-01 1.1. P3 agrega el handoff propositivo AI→AW como frontera versionada; la persistencia y revisión pertenecen a Archive Workbench.
+El motor **no abre la base SQLite de Archive Workbench, no aplica cambios por sí mismo y no convierte una salida automática en una decisión archivística**. La selección del material, la autorización del análisis, la revisión, la aceptación y la vigencia pertenecen a Archive Workbench.
 
-Principios:
+> **Estado actual:** pre-release. La integración técnica nativa AW ↔ Archive Workbench AI y el puente local para la distribución administrada basada en Docker están implementados. Falta validarlos sobre las imágenes definitivas y los artefactos de distribución publicados en las plataformas declaradas antes del primer release público estable.
 
-- Archive Workbench y Archive Workbench AI se distribuyen por separado.
-- `run` y `benchmark run` son offline y usan un servidor efímero en `127.0.0.1`.
-- `models pull` es la única operación que descarga pesos.
-- Los pesos se verifican por SHA-256.
-- Los modelos se cargan secuencialmente.
-- Diagnósticos: `AWAI_DIAGNOSTICO_*.zip` en `~/Downloads/`.
-- Benchmarks: `AWAI_BENCHMARK_*.zip` en `~/Downloads/`.
-- EXP-01 1.0 sigue admitido para evidencia histórica y jobs visuales sin contexto.
-- EXP-01 1.1 aporta texto canónico + `geometry` + `bbox` normalizado por objeto textual.
+## Qué hace
 
-## Criterio de `vision_describe/0.1` desde dev16
+El flujo normal es:
 
-La imagen sigue siendo evidencia primaria para composición y rasgos visuales/documentales. Cuando EXP-01 1.1 aporta texto canónico localizado, ese texto se usa como contexto ya disponible y **no como OCR a rehacer**. La evaluación prioriza organización material, sellos, firmas, manuscritos, casillas, superposiciones, deterioro, jerarquía visual, relaciones texto/imagen e inferencias no justificadas. La recuperación textual exhaustiva deja de ser un criterio principal.
+1. Archive Workbench selecciona y autoriza el material.
+2. Archive Workbench genera un paquete EXP-01 con imágenes y contexto documental.
+3. Archive Workbench AI ejecuta la inferencia local.
+4. El motor devuelve un resultado consolidado y un paquete de propuestas.
+5. Archive Workbench permite inspeccionar e incorporar esas propuestas a su capa de revisión.
+6. Una persona decide qué aceptar, corregir o descartar.
 
-## Estado de modelos
+Para un EXP-01 completo, `aw-ai analyze` administra internamente el procesamiento por lotes y devuelve un único resultado consolidado. No es necesario dividir manualmente las páginas.
 
-- **L12 lógico cerrado:** Qwen3.5-9B Q4_K_M es la configuración principal por calidad visual/documental; Gemma E4B queda como fallback rápido y MiniCPM-V 4.6 como baseline. Falta sólo la validación en GPU física de 12 GB.
-- **H24 cerrado:** Gemma 4 26B-A4B Q4_0 es la configuración principal por equilibrio entre precisión estructural/documental, tiempo y margen de VRAM.
-- Qwen3.6 35B-A3B Q4_K_M queda como referencia de mayor detalle visual con mayor coste.
-- Gemma 4 E4B Q4_0 queda como fallback liviano; no es principal H24 porque cometió un error estructural relevante en la página periodística.
+## Privacidad y red
 
-## dev16 — EXP-01 1.1
+La inferencia se realiza localmente mediante `llama.cpp`. Una vez instalados el runtime y los modelos, `analyze`, `run` y los benchmarks no necesitan acceso a Internet.
 
-Archive Workbench AI acepta EXP-01 1.0 y 1.1. Para 1.1 valida `context/objects.jsonl`, el hash declarado y el contrato `x_y_width_height` en espacio `normalized`, asocia los objetos de contexto a cada página y construye un prompt efectivo con texto + bbox. La configuración efectiva registra cuántos bloques contextuales recibió cada target y si el contexto fue truncado por el límite determinista del plugin.
+La red se usa únicamente cuando una persona solicita una descarga, por ejemplo:
 
-Ver `docs/PROTOCOLO_0_1.md`, `docs/BENCHMARK_P1_P2_20260915.md` y `docs/INSTALACION_P2.md`.
+- `aw-ai runtime install`, para obtener el runtime fijado cuando existe un binario apropiado para la plataforma;
+- `aw-ai models pull`, para descargar un modelo del catálogo.
 
+Los modelos no se incluyen dentro del repositorio ni del paquete de Archive Workbench AI.
 
-## dev16 — disciplina de contexto y salida
+## Requisitos
 
-La primera corrida EXP-01 1.1 real mostró que algunos modelos podían convertir el texto canónico en una retranscripción extensa. dev16 conserva texto+bbox como contexto, pero recorta determinísticamente cada bloque largo para el prompt y limita la estructura generada. Si una primera generación termina por longitud, el retry usa una instrucción compacta explícita. El schema público `vision_describe/0.1` no cambia.
+- Python 3.11 o posterior.
+- Espacio suficiente para el runtime y los modelos elegidos.
+- Para aceleración NVIDIA en Linux: controlador NVIDIA, CUDA Toolkit, Git y CMake durante la preparación del runtime.
+- Para aceleración NVIDIA en Windows: una GPU y controlador compatibles con la variante CUDA publicada por `llama.cpp`.
+- En macOS, el runtime nativo utiliza Metal cuando la plataforma lo permite.
 
-## Mini benchmark público
+La ruta de instalación existe para Linux, Windows y macOS. La validación de calidad y rendimiento cerrada del perfil H24 se realizó sobre Linux con NVIDIA RTX 3090. El perfil L12 tiene selección lógica cerrada, pero la validación física específica sobre una GPU de 12 GB continúa pendiente.
 
-La batería H24 de cierre se publica en formato repo-agnóstico bajo `benchmarks/vision-describe-h24-20260915/`: incluye las dos capturas, métricas, request y salidas estructuradas de los tres modelos. El directorio puede copiarse tal cual al futuro repositorio público aunque cambie su nombre.
+## Instalación técnica
 
-La batería L12 pública está en `benchmarks/vision-describe-l12-20260915/`.
-
-
-## P3 — handoff de resultados propuestos
-
-Desde `0.1.0.dev18`, el motor puede convertir un `result.zip` completo y su EXP-01 original en un paquete
-`archive_workbench_ai_result_handoff/0.1`. El paquete conserva IDs de target, documento/página, hashes de
-EXP-01 y result bundle, modelo, runtime, prompt y salida estructurada. Su política es siempre
-`proposed_only`: no aplica cambios automáticamente y exige revisión humana en Archive Workbench.
+Mientras no exista un release público estable, el repositorio puede instalarse desde fuente:
 
 ```bash
-aw-ai handoff build --input EXP01.zip --result result.zip --output handoff.zip
-aw-ai handoff inspect --bundle handoff.zip --json
+git clone https://github.com/alexdcolman/archive-workbench-ai.git
+cd archive-workbench-ai
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip setuptools wheel
+python -m pip install -e .
 ```
 
-Archive Workbench AI sigue sin abrir SQLite ni importar módulos internos de Archive Workbench. Del lado AW, P3-A, P3-B y la candidata P3-C consumen este mismo handoff dev18 sin ampliarlo: P3-B persiste raw + revisión humana en `0049_external_analysis_layer` y P3-C agrega la sección top-level `Análisis asistido` para recibir, revisar y consultar esa capa.
+En Windows PowerShell, la activación equivalente es:
 
-`capabilities --json` distingue el baseline de bootstrap (`default_model`) de los defaults de calidad por perfil (`profile_default_models`): Qwen3.5 9B para L12 y Gemma 26B-A4B para H24.
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
 
-## dev20 — nombre público estable y análisis completo
-
-Para el uso normal ya no hace falta construir `request.json`, dividir páginas ni ejecutar `handoff build` por cada tanda. `analyze` recibe directamente un EXP-01 y genera un único resultado/handoff consolidado:
+Después puede prepararse el runtime local:
 
 ```bash
-aw-ai analyze \
-  --input /ruta/EXP01.zip \
-  --profile H24
+aw-ai runtime install --variant auto
+aw-ai runtime inspect --json
 ```
 
-Si se omite `--output`, el handoff se guarda en `~/Downloads/AWAI_HANDOFF_<timestamp>.zip` y el result bundle queda junto a él. El perfil elige su modelo default (H24 → Gemma 4 26B-A4B Q4_0; L12 → Qwen3.5 9B Q4_K_M), aunque `--model` permite una selección explícita.
+Y descargar el modelo correspondiente al perfil que se vaya a utilizar. Los defaults actuales son:
 
-El contrato bajo nivel `archive-workbench-ai/0.1` continúa admitiendo 1–3 targets por request. dev20 conserva ese límite en un detalle interno: registra los requests internos por lotes, mantiene la trazabilidad y entrega un único handoff `archive_workbench_ai_result_handoff/0.1` con todas las propuestas. `aw-ai run` sigue disponible para reproducción y depuración fina.
+- H24: Gemma 4 26B-A4B Q4_0.
+- L12: Qwen3.5 9B Q4_K_M.
 
+Por ejemplo:
 
-## dev20 — nombre público estable
+```bash
+aw-ai models pull 'ggml-org/gemma-4-26B-A4B-it-GGUF:Q4_0'
+aw-ai doctor --json
+```
 
-El proyecto adopta el nombre público **Archive Workbench AI**. El paquete distribuible es `archive-workbench-ai`, el módulo Python es `archive_workbench_ai` y la CLI es `aw-ai`. Los contratos versionados no cambian: el protocolo sigue siendo `archive-workbench-ai/0.1` y el handoff sigue siendo `archive_workbench_ai_result_handoff/0.1`.
+La guía completa por plataforma está en [`docs/INSTALACION.md`](docs/INSTALACION.md).
 
-La instalación dev20 reconoce como compatibilidad local el almacenamiento y las variables `AW_AI01_*` de las candidatas previas, para reutilizar modelos y runtime ya descargados. Las instalaciones nuevas usan `AW_AI_*` y `~/.local/share/archive-workbench-ai/`.
+## Uso con Archive Workbench
+
+Cuando Archive Workbench y Archive Workbench AI están instalados en el mismo entorno de host, Archive Workbench detecta `aw-ai` en `PATH`. También puede indicarse explícitamente:
+
+```bash
+export ARCHIVE_WORKBENCH_AI_EXECUTABLE=/ruta/a/aw-ai
+```
+
+El recorrido visible se realiza desde **Análisis asistido** en Archive Workbench. La persona elige qué analizar y pulsa **Iniciar análisis**; la salida vuelve como propuesta para revisión.
+
+La frontera entre ambos proyectos permanece en EXP-01 y el handoff versionado. Archive Workbench AI no importa módulos privados de Archive Workbench ni escribe en su SQLite.
+
+En la distribución administrada con Docker, Archive Workbench usa un buzón local compartido bajo `ArchiveWorkbenchData/Settings/archive-workbench-ai-bridge`. El contenedor deposita allí únicamente el EXP-01 autorizado y parámetros acotados; el compañero nativo procesa el trabajo y devuelve `result.zip` + `handoff.zip`. No se abre ningún puerto ni se expone SQLite. Véase [`docs/INTEGRACION_ARCHIVE_WORKBENCH.md`](docs/INTEGRACION_ARCHIVE_WORKBENCH.md).
+
+## Perfiles y modelos
+
+Los perfiles describen una configuración lógica de hardware y un modelo por defecto. No representan una garantía universal sobre cualquier equipo.
+
+| Perfil | Modelo por defecto | Estado |
+| --- | --- | --- |
+| H24 | Gemma 4 26B-A4B Q4_0 | Validado en RTX 3090 de 24 GB |
+| L12 | Qwen3.5 9B Q4_K_M | Selección lógica cerrada; prueba física de 12 GB pendiente |
+
+MiniCPM-V 4.6 permanece como baseline técnico y existen modelos alternativos en el catálogo para comparación y diagnóstico. La justificación de la selección y las limitaciones se documentan en [`docs/MODELOS_Y_HARDWARE.md`](docs/MODELOS_Y_HARDWARE.md).
+
+## Interfaz de línea de comandos
+
+Comandos principales:
+
+```bash
+aw-ai --version
+aw-ai doctor --json
+aw-ai capabilities --json
+aw-ai runtime install --variant auto
+aw-ai runtime inspect --json
+aw-ai models list --json
+aw-ai models pull MODEL_ID
+aw-ai analyze --input EXP01.zip --profile H24
+```
+
+`aw-ai run`, `benchmark` y `handoff` permanecen disponibles para reproducción técnica, pruebas y diagnóstico. El uso cotidiano desde Archive Workbench no requiere operar esos comandos manualmente.
+
+## Contratos y trazabilidad
+
+Los contratos públicos actuales son:
+
+- protocolo de bajo nivel: `archive-workbench-ai/0.1`;
+- tarea: `vision_describe/0.1`;
+- handoff de propuestas: `archive_workbench_ai_result_handoff/0.1`.
+
+El protocolo de bajo nivel admite hasta tres targets por request. `aw-ai analyze` conserva ese límite sólo como detalle interno y entrega un único resultado consolidado para un EXP-01 completo.
+
+La referencia está en [`docs/PROTOCOLO_0_1.md`](docs/PROTOCOLO_0_1.md).
+
+## Documentación
+
+- [Instalación](docs/INSTALACION.md)
+- [Distribución y plataformas](docs/DISTRIBUCION.md)
+- [Integración con Archive Workbench](docs/INTEGRACION_ARCHIVE_WORKBENCH.md)
+- [Modelos y hardware](docs/MODELOS_Y_HARDWARE.md)
+- [Protocolo 0.1](docs/PROTOCOLO_0_1.md)
+- [Desarrollo y pruebas](docs/DESARROLLO.md)
+- [Preparación de releases](docs/RELEASE.md)
+- [Historial técnico](docs/history/)
+
+## Desarrollo y pruebas
+
+La suite canónica usa el mismo intérprete en el que está instalado el paquete:
+
+```bash
+VENV_PY="$PWD/.venv/bin/python"
+"$VENV_PY" -m unittest discover -s tests -v
+```
+
+No se debe sustituir ese gate por un `pytest` global que pueda resolver a otro intérprete.
+
+## Licencia y cita
+
+Archive Workbench AI se distribuye bajo GNU Affero General Public License v3.0 o posterior (`AGPL-3.0-or-later`).
+
+Desarrollo: Alex Colman, en el marco del Grupo de Investigación en Archivos de la Represión (GIAR).
+
+[`CITATION.cff`](CITATION.cff) contiene los metadatos de cita. Los runtimes, modelos y dependencias de terceros conservan sus propias licencias; véase [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).

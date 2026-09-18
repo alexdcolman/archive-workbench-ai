@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+message: "Si utiliza o modifica este software, cite Archive Workbench AI y a sus autores mediante estos metadatos."
+title: "Archive Workbench AI"
+type: software
+version: "0.1.0.dev22"
+date-released: "2026-09-18"
+authors:
+  - family-names: "Colman"
+    given-names: "Alex"
+  - name: "Grupo de Investigación en Archivos de la Represión (GIAR)"
+abstract: "Motor local y externo de análisis asistido para Archive Workbench, con resultados propositivos sujetos a revisión humana."
+repository-code: "https://github.com/alexdcolman/archive-workbench-ai"
+url: "https://github.com/alexdcolman/archive-workbench-ai"
+license: "AGPL-3.0-or-later"
+keywords:
+  - archivos
+  - archivos de la represión
+  - inteligencia artificial local
+  - análisis documental
+  - humanidades digitales
+  - software de investigación

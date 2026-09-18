@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 import os
+import sys
 
 
 @dataclass(frozen=True, slots=True)
@@ -189,12 +190,23 @@ def get_model_spec(model_id: str) -> ModelSpec:
     raise KeyError(f"Modelo desconocido: {model_id}. Catálogo: {known}")
 
 
+def _data_base() -> Path:
+    if sys.platform == "darwin":
+        return Path.home() / "Library" / "Application Support"
+    if os.name == "nt":
+        local = os.environ.get("LOCALAPPDATA")
+        if local:
+            return Path(local).expanduser()
+        return Path.home() / "AppData" / "Local"
+    xdg = os.environ.get("XDG_DATA_HOME")
+    return Path(xdg).expanduser() if xdg else Path.home() / ".local" / "share"
+
+
 def data_root() -> Path:
     explicit = os.environ.get("AW_AI_DATA_HOME") or os.environ.get("AW_AI01_DATA_HOME")
     if explicit:
         return Path(explicit).expanduser().resolve()
-    xdg = os.environ.get("XDG_DATA_HOME")
-    base = Path(xdg).expanduser().resolve() if xdg else Path.home() / ".local" / "share"
+    base = _data_base().resolve()
     current = base / "archive-workbench-ai"
     legacy = base / "archive-workbench-ai01"
     if current.exists() or not legacy.exists():

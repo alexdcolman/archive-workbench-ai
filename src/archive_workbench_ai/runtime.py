@@ -8,9 +8,7 @@ import shutil
 import subprocess
 from typing import Sequence
 
-PINNED_LLAMA_BUILD = 10903
-PINNED_LLAMA_TAG = "b10903"
-PINNED_LLAMA_COMMIT = "481c65f"
+from .runtime_catalog import PINNED_LLAMA_BUILD, PINNED_LLAMA_COMMIT, PINNED_LLAMA_TAG
 
 
 @dataclass(frozen=True, slots=True)
@@ -60,7 +58,7 @@ def _parse_build(text: str | None) -> tuple[int | None, str | None]:
 def _validation_status(build: int | None, revision: str | None) -> str:
     # The pinned commit is the strongest identity signal. Current llama.cpp
     # version output does not necessarily expose the release tag/build number.
-    if revision and revision.startswith(PINNED_LLAMA_COMMIT):
+    if revision and (revision.startswith(PINNED_LLAMA_COMMIT) or PINNED_LLAMA_COMMIT.startswith(revision)):
         return "pinned"
     if build is None:
         return "unverified"
@@ -76,6 +74,15 @@ def detect_runtime() -> RuntimeCommand | None:
     candidates: list[tuple[tuple[str, ...], str, str]] = []
     if explicit:
         path = str(Path(explicit).expanduser())
+        candidates.append(((path,), path, "llama-server"))
+    try:
+        from .runtime_manager import managed_runtime_executable
+
+        managed = managed_runtime_executable()
+    except Exception:
+        managed = None
+    if managed is not None:
+        path = str(managed)
         candidates.append(((path,), path, "llama-server"))
     server = shutil.which("llama-server")
     if server:
