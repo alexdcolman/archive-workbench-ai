@@ -43,7 +43,7 @@ def main() -> None:
                 "Maintainer: Alex Colman",
                 "Depends: xdg-utils",
                 "Description: Local assisted-analysis engine for Archive Workbench",
-                "", 
+                "",
             ]
         ),
         encoding="utf-8",
