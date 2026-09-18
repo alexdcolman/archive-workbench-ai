@@ -2,12 +2,24 @@ name: Build Archive Workbench AI native candidates
 
 on:
   workflow_dispatch:
+    inputs:
+      target:
+        description: "Candidata nativa a construir"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - linux-x64
+          - windows-x64
+          - macos
 
 permissions:
   contents: read
 
 jobs:
   linux-x64:
+    if: ${{ inputs.target == 'all' || inputs.target == 'linux-x64' }}
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
@@ -38,6 +50,7 @@ jobs:
             native-linux-*.json
 
   windows-x64:
+    if: ${{ inputs.target == 'all' || inputs.target == 'windows-x64' }}
     runs-on: windows-2025
     steps:
       - uses: actions/checkout@v6
@@ -47,6 +60,8 @@ jobs:
       - name: Build standalone binary
         shell: pwsh
         run: |
+          $ErrorActionPreference = "Stop"
+          $PSNativeCommandUseErrorActionPreference = $true
           python -m pip install --upgrade pip setuptools wheel pyinstaller
           python -m pip install .
           python -m PyInstaller --clean --onefile --name aw-ai --collect-data archive_workbench_ai packaging/aw_ai_entry.py
@@ -74,6 +89,7 @@ jobs:
             native-windows-*.json
 
   macos:
+    if: ${{ inputs.target == 'all' || inputs.target == 'macos' }}
     strategy:
       matrix:
         include:

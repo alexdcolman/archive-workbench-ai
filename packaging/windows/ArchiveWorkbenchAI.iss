@@ -18,7 +18,7 @@ UninstallDisplayIcon={app}\aw-ai.exe
 
 [Files]
 Source: "{#MyAppBinary}"; DestDir: "{app}"; DestName: "aw-ai.exe"; Flags: ignoreversion
-Source: "packaging\windows\setup.vbs"; DestDir: "{app}"; Flags: ignoreversion
+Source: "setup.vbs"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\Archive Workbench AI Setup"; Filename: "{sys}\wscript.exe"; Parameters: """{app}\setup.vbs"""; WorkingDir: "{app}"

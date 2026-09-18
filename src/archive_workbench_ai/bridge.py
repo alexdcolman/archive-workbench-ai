@@ -37,7 +37,10 @@ def _utc_now() -> str:
 def _atomic_json(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(path.name + ".tmp")
-    tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    tmp.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
     tmp.replace(path)
 
 
@@ -99,12 +102,23 @@ def _load_request(job_dir: Path, secret: str) -> dict[str, Any]:
     if not isinstance(request, dict):
         raise InvalidInputError("request.json del puente debe ser un objeto JSON")
     allowed = {
-        "bridge_protocol", "job_id", "authorization", "created_at", "hardware_profile",
-        "model_id", "target_types", "max_output_tokens", "temperature", "seed", "input_sha256"
+        "bridge_protocol",
+        "job_id",
+        "authorization",
+        "created_at",
+        "hardware_profile",
+        "model_id",
+        "target_types",
+        "max_output_tokens",
+        "temperature",
+        "seed",
+        "input_sha256",
     }
     extra = set(request) - allowed
     if extra:
-        raise InvalidInputError("request.json contiene campos no admitidos: " + ", ".join(sorted(extra)))
+        raise InvalidInputError(
+            "request.json contiene campos no admitidos: " + ", ".join(sorted(extra))
+        )
     if request.get("bridge_protocol") != BRIDGE_PROTOCOL:
         raise InvalidInputError("Versión de puente no compatible")
     if request.get("job_id") != job_dir.name:
@@ -140,9 +154,10 @@ def process_job(job_dir: Path, *, backend: str = "llama_cpp") -> dict[str, Any]:
         spec = PROFILE_DEFAULT_MODELS[str(request["hardware_profile"])]
     if str(request["hardware_profile"]) not in spec.hardware_profiles:
         raise InvalidInputError("El modelo solicitado no es compatible con el perfil indicado")
-    _atomic_json(job_dir / "status.json", {
-        "status": "processing", "job_id": job_dir.name, "updated_at": _utc_now()
-    })
+    _atomic_json(
+        job_dir / "status.json",
+        {"status": "processing", "job_id": job_dir.name, "updated_at": _utc_now()},
+    )
     payload = analyze_exp01(
         input_path=input_path,
         handoff_output_path=handoff_path,
@@ -170,9 +185,10 @@ def process_job(job_dir: Path, *, backend: str = "llama_cpp") -> dict[str, Any]:
         "handoff_schema_version": payload["handoff_schema_version"],
     }
     _atomic_json(job_dir / "response.json", response)
-    _atomic_json(job_dir / "status.json", {
-        "status": "complete", "job_id": job_dir.name, "updated_at": _utc_now()
-    })
+    _atomic_json(
+        job_dir / "status.json",
+        {"status": "complete", "job_id": job_dir.name, "updated_at": _utc_now()},
+    )
     return response
 
 
@@ -240,23 +256,29 @@ def _valid_job_dirs(root: Path) -> list[Path]:
     return sorted(found, key=lambda p: p.name)
 
 
-def process_pending(root: Path, *, backend: str = "llama_cpp", limit: int | None = None) -> int:
+def process_pending(
+    root: Path, *, backend: str = "llama_cpp", limit: int | None = None
+) -> int:
     processed = 0
     for job_dir in _valid_job_dirs(root.resolve()):
         try:
             process_job(job_dir, backend=backend)
         except Exception as exc:
-            _atomic_json(job_dir / "response.json", {
-                "status": "error",
-                "bridge_protocol": BRIDGE_PROTOCOL,
-                "job_id": job_dir.name,
-                "completed_at": _utc_now(),
-                "error": type(exc).__name__,
-                "message": str(exc),
-            })
-            _atomic_json(job_dir / "status.json", {
-                "status": "failed", "job_id": job_dir.name, "updated_at": _utc_now()
-            })
+            _atomic_json(
+                job_dir / "response.json",
+                {
+                    "status": "error",
+                    "bridge_protocol": BRIDGE_PROTOCOL,
+                    "job_id": job_dir.name,
+                    "completed_at": _utc_now(),
+                    "error": type(exc).__name__,
+                    "message": str(exc),
+                },
+            )
+            _atomic_json(
+                job_dir / "status.json",
+                {"status": "failed", "job_id": job_dir.name, "updated_at": _utc_now()},
+            )
         processed += 1
         if limit is not None and processed >= limit:
             break
@@ -294,16 +316,22 @@ def bridge_status(root: Path | None = None) -> dict[str, Any]:
     }
 
 
-def serve_bridge(root: Path | None = None, *, poll_seconds: float = 0.5, once: bool = False) -> int:
+def serve_bridge(
+    root: Path | None = None, *, poll_seconds: float = 0.5, once: bool = False
+) -> int:
     root = (root or default_bridge_root()).expanduser().resolve()
     initialize_bridge(root)
+    stop_path = root / "stop.request"
+    stop_path.unlink(missing_ok=True)
     lock_path = root / "bridge.lock"
     try:
         fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
     except FileExistsError:
         current = bridge_status(root)
         if current["running"]:
-            raise RuntimeUnavailableError(f"El puente ya está ejecutándose con PID {current['pid']}")
+            raise RuntimeUnavailableError(
+                f"El puente ya está ejecutándose con PID {current['pid']}"
+            )
         lock_path.unlink(missing_ok=True)
         fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
     stop = False
@@ -319,27 +347,48 @@ def serve_bridge(root: Path | None = None, *, poll_seconds: float = 0.5, once: b
         os.close(fd)
         (root / "bridge.pid").write_text(f"{os.getpid()}\n", encoding="utf-8")
         _atomic_json(root / "capabilities.json", bridge_capabilities())
-        _atomic_json(root / "bridge-status.json", {
-            "status": "running", "pid": os.getpid(), "started_at": _utc_now(), "protocol": BRIDGE_PROTOCOL
-        })
+        _atomic_json(
+            root / "bridge-status.json",
+            {
+                "status": "running",
+                "pid": os.getpid(),
+                "started_at": _utc_now(),
+                "protocol": BRIDGE_PROTOCOL,
+            },
+        )
         while not stop:
+            if stop_path.is_file():
+                break
             cleanup_bridge_jobs(root)
             count = process_pending(root)
-            _atomic_json(root / "bridge-status.json", {
-                "status": "running", "pid": os.getpid(), "updated_at": _utc_now(),
-                "protocol": BRIDGE_PROTOCOL, "processed_last_cycle": count,
-            })
+            _atomic_json(
+                root / "bridge-status.json",
+                {
+                    "status": "running",
+                    "pid": os.getpid(),
+                    "updated_at": _utc_now(),
+                    "protocol": BRIDGE_PROTOCOL,
+                    "processed_last_cycle": count,
+                },
+            )
             if once:
                 break
             time.sleep(max(0.1, poll_seconds))
         return 0
     finally:
-        _atomic_json(root / "bridge-status.json", {
-            "status": "stopped", "pid": os.getpid(), "updated_at": _utc_now(), "protocol": BRIDGE_PROTOCOL
-        })
+        _atomic_json(
+            root / "bridge-status.json",
+            {
+                "status": "stopped",
+                "pid": os.getpid(),
+                "updated_at": _utc_now(),
+                "protocol": BRIDGE_PROTOCOL,
+            },
+        )
         (root / "bridge.pid").unlink(missing_ok=True)
         lock_path.unlink(missing_ok=True)
         (root / "capabilities.json").unlink(missing_ok=True)
+        stop_path.unlink(missing_ok=True)
         signal.signal(signal.SIGTERM, old_term)
         signal.signal(signal.SIGINT, old_int)
 
@@ -347,6 +396,7 @@ def serve_bridge(root: Path | None = None, *, poll_seconds: float = 0.5, once: b
 def start_bridge(root: Path | None = None, *, wait_seconds: float = 10.0) -> dict[str, Any]:
     root = (root or default_bridge_root()).expanduser().resolve()
     initialize_bridge(root)
+    (root / "stop.request").unlink(missing_ok=True)
     status = bridge_status(root)
     if status["running"]:
         return {**status, "status": "already_running"}
@@ -394,16 +444,50 @@ def stop_bridge(root: Path | None = None, *, wait_seconds: float = 10.0) -> dict
     root = (root or default_bridge_root()).expanduser().resolve()
     status = bridge_status(root)
     pid = status.get("pid")
+    stop_path = root / "stop.request"
     if not status["running"] or not isinstance(pid, int):
         (root / "capabilities.json").unlink(missing_ok=True)
+        stop_path.unlink(missing_ok=True)
         return {**status, "status": "not_running"}
-    try:
-        os.kill(pid, signal.SIGTERM)
-    except OSError as exc:
-        raise RuntimeUnavailableError(f"No se pudo detener el puente con PID {pid}: {exc}") from exc
+
+    # Primary shutdown path: cooperative and cross-platform, including frozen
+    # one-file executables on Windows.
+    stop_path.write_text(_utc_now() + "\n", encoding="utf-8")
     deadline = time.monotonic() + wait_seconds
     while time.monotonic() < deadline:
-        if not _pid_alive(pid):
-            return {**bridge_status(root), "status": "stopped"}
+        current = bridge_status(root)
+        if not current["running"]:
+            stop_path.unlink(missing_ok=True)
+            return {**current, "status": "stopped"}
         time.sleep(0.1)
-    raise RuntimeUnavailableError(f"El puente con PID {pid} no se detuvo dentro del plazo esperado")
+
+    # Fallback only for an unresponsive companion.
+    try:
+        if os.name == "nt":
+            completed = subprocess.run(
+                ["taskkill", "/PID", str(pid), "/T", "/F"],
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            if completed.returncode != 0 and _pid_alive(pid):
+                detail = (completed.stderr or completed.stdout or "").strip()
+                raise RuntimeUnavailableError(
+                    f"No se pudo detener el puente con PID {pid}. Detalle: {detail}"
+                )
+        else:
+            os.kill(pid, signal.SIGTERM)
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise RuntimeUnavailableError(f"No se pudo detener el puente con PID {pid}: {exc}") from exc
+
+    fallback_deadline = time.monotonic() + 5.0
+    while time.monotonic() < fallback_deadline:
+        current = bridge_status(root)
+        if not current["running"]:
+            stop_path.unlink(missing_ok=True)
+            return {**current, "status": "stopped"}
+        time.sleep(0.1)
+    raise RuntimeUnavailableError(
+        f"El puente con PID {pid} no se detuvo dentro del plazo esperado"
+    )
