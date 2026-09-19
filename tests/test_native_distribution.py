@@ -121,7 +121,12 @@ class NativeDistributionTests(unittest.TestCase):
         self.assertIn("nvidia/cuda:12.8.1-devel-ubuntu24.04", source)
         self.assertIn("llama-b10903-bin-ubuntu-cuda-12.8-x64.tar.gz", source)
         self.assertIn("Free disk space for CUDA candidate build", source)
+        self.assertIn("-DCMAKE_EXE_LINKER_FLAGS=-Wl,--allow-shlib-undefined", source)
+        self.assertIn('readelf -d "$CUDA_BACKEND"', source)
+        self.assertIn("libcuda.so.1", source)
+        self.assertIn('-name "libcuda.so*" -print -quit', source)
         self.assertNotIn("--gpus all", source)
+        self.assertNotIn("cp /usr/local/cuda/lib64/stubs/libcuda", source)
 
 
 if __name__ == "__main__":
