@@ -38,17 +38,61 @@ jobs:
                 -DGGML_NATIVE=OFF \
                 -DGGML_CUDA_FA_QUANTS="q4_0-q4_0;q8_0-q8_0;f16-f16;bf16-bf16" \
                 -DCMAKE_EXE_LINKER_FLAGS=-Wl,--allow-shlib-undefined
-              cmake --build /build --config Release --target llama-server -j2
+              cmake --build /build --config Release --target llama-server -j"$(nproc)"
+
               mkdir -p /stage/bin /stage/lib
               cp /build/bin/llama-server /stage/bin/llama-server-bin
-              find /build/bin -maxdepth 1 -type f -name "*.so*" -exec cp -a {} /stage/lib/ \;
-              for pattern in libcudart.so libcublas.so libcublasLt.so libnvJitLink.so; do
-                find /usr/local/cuda \( -type f -o -type l \) | grep "/${pattern}" | head -n 20 | while read -r f; do cp -aL "$f" /stage/lib/ || true; done
+              find /build/bin -maxdepth 1 \( -type f -o -type l \) -name "*.so*" -exec cp -a {} /stage/lib/ \;
+
+              CUDA_LIB_ROOT=/usr/local/cuda/targets/x86_64-linux/lib
+              test -d "$CUDA_LIB_ROOT"
+              for pattern in "libcudart.so*" "libcublas.so*" "libcublasLt.so*" "libnvJitLink.so*"; do
+                copied=0
+                for f in "$CUDA_LIB_ROOT"/$pattern; do
+                  [ -e "$f" ] || continue
+                  cp -a "$f" /stage/lib/
+                  copied=1
+                done
+                test "$copied" -eq 1
               done
-              CUDA_BACKEND=$(find /stage/lib -maxdepth 1 -type f -name "libggml-cuda.so*" | head -n 1)
+
+              CUDA_BACKEND=""
+              for candidate in /stage/lib/libggml-cuda.so*; do
+                if [ -f "$candidate" ]; then
+                  CUDA_BACKEND="$candidate"
+                  break
+                fi
+              done
               test -n "$CUDA_BACKEND"
-              readelf -d "$CUDA_BACKEND" | grep -q "Shared library: \\[libcuda.so.1\\]"
-              test -z "$(find /stage \( -type f -o -type l \) -name "libcuda.so*" -print -quit)"
+
+              DYNAMIC_SECTION="$(readelf -d "$CUDA_BACKEND")"
+              case "$DYNAMIC_SECTION" in
+                *"Shared library: [libcuda.so.1]"*) ;;
+                *)
+                  printf "%s\n" "$DYNAMIC_SECTION"
+                  echo "libggml-cuda no conserva dependencia al driver libcuda.so.1" >&2
+                  exit 1
+                  ;;
+              esac
+
+              if compgen -G "/stage/lib/libcuda.so*" > /dev/null; then
+                echo "El staging contiene libcuda.so; el driver del host no debe empaquetarse." >&2
+                exit 1
+              fi
+
+              STUB_DIR="$CUDA_LIB_ROOT/stubs"
+              test -f "$STUB_DIR/libcuda.so"
+              mkdir -p /tmp/driver-stub
+              ln -sf "$STUB_DIR/libcuda.so" /tmp/driver-stub/libcuda.so.1
+              LDD_OUTPUT="$(LD_LIBRARY_PATH="/tmp/driver-stub:/stage/lib" ldd /stage/bin/llama-server-bin)"
+              printf "%s\n" "$LDD_OUTPUT"
+              case "$LDD_OUTPUT" in
+                *"not found"*)
+                  echo "Quedaron dependencias compartidas sin resolver en el runtime candidato." >&2
+                  exit 1
+                  ;;
+              esac
+
               cat > /stage/llama-server <<"EOF_WRAPPER"
           #!/bin/sh
           HERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
@@ -56,7 +100,13 @@ jobs:
           exec "$HERE/bin/llama-server-bin" "$@"
           EOF_WRAPPER
               chmod +x /stage/llama-server /stage/bin/llama-server-bin
+
               tar -C /stage -czf /out/llama-b10903-bin-ubuntu-cuda-12.8-x64.tar.gz .
+              tar -tzf /out/llama-b10903-bin-ubuntu-cuda-12.8-x64.tar.gz > /tmp/runtime-files.txt
+              if grep -E "(^|/)libcuda\.so" /tmp/runtime-files.txt; then
+                echo "El archivo final contiene libcuda.so y es inválido." >&2
+                exit 1
+              fi
               sha256sum /out/llama-b10903-bin-ubuntu-cuda-12.8-x64.tar.gz > /out/SHA256SUMS.txt
             '
           test -s runtime-dist/llama-b10903-bin-ubuntu-cuda-12.8-x64.tar.gz
