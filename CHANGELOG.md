@@ -4,6 +4,7 @@
 - Impide que la ruta administrada compile Linux/NVIDIA desde fuente; el rechazo precede cualquier reparación destructiva.
 - Agrega workflows para construir/smokear candidatas nativas de Ubuntu, Windows y macOS.
 - Agrega workflow separado para construir el runtime CUDA Linux x64 desde el commit fijado de llama.cpp.
+- Cierra el runtime NVIDIA Linux x64 precompilado con SHA-256 `d41bb204eb09995bfe387950435ddd84635aaaed28fade425d7d35c1bb2cee89` y lo registra para descarga administrada desde `archive-workbench-ai-dist`.
 - Mantiene runtime/modelos fuera del ejecutable y conserva el bridge global de dev23.
 
 ## 0.1.0.dev23 — base de distribución administrada sin terminal

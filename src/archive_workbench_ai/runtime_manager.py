@@ -304,7 +304,7 @@ def install_runtime(
             _download(asset, archive)
             _extract(archive, root)
     executable = _find_server(root)
-    marker = _write_marker(root, package=package, executable=executable, source="upstream-release")
+    marker = _write_marker(root, package=package, executable=executable, source=package.source)
     return {**marker, "status": "installed", "root": str(root)}
 
 

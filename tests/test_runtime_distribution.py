@@ -18,11 +18,21 @@ from archive_workbench_ai.runtime_catalog import PINNED_LLAMA_COMMIT, PINNED_LLA
 class RuntimeDistributionTests(unittest.TestCase):
     def test_runtime_catalog_covers_public_release_targets(self) -> None:
         self.assertIsNotNone(runtime_package("linux", "x86_64", "cpu"))
-        self.assertTrue(runtime_package("linux", "x86_64", "nvidia").source_build)
+
+        linux_nvidia = runtime_package("linux", "x86_64", "nvidia")
+        self.assertIsNotNone(linux_nvidia)
+        assert linux_nvidia is not None
+        self.assertFalse(linux_nvidia.source_build)
+        self.assertEqual(linux_nvidia.source, "archive-workbench-ai-dist")
+        self.assertEqual(len(linux_nvidia.assets), 1)
+        self.assertTrue(all(len(asset.sha256) == 64 for asset in linux_nvidia.assets))
+
         self.assertIsNotNone(runtime_package("darwin", "arm64", "metal"))
         self.assertIsNotNone(runtime_package("darwin", "x86_64", "metal"))
+
         windows_cuda = runtime_package("windows", "x86_64", "nvidia")
         self.assertIsNotNone(windows_cuda)
+        assert windows_cuda is not None
         self.assertEqual(len(windows_cuda.assets), 2)
         self.assertTrue(all(len(asset.sha256) == 64 for asset in windows_cuda.assets))
 

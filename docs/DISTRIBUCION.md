@@ -19,7 +19,7 @@ EXP-01 y el handoff versionado son la frontera contractual. Archive Workbench AI
 | --- | --- | --- | --- |
 | Linux | x86_64 | CPU | binario upstream verificado |
 | Linux | arm64 | CPU | binario upstream verificado |
-| Linux | x86_64 | NVIDIA | runtime administrado precompilado candidato; hash pendiente de fijar |
+| Linux | x86_64 | NVIDIA | runtime administrado CUDA 12.8 precompilado y SHA-256 fijado |
 | Linux | arm64 | NVIDIA | no declarado para el primer release administrado |
 | Windows | x64 | CPU | binario upstream verificado |
 | Windows | ARM64 | CPU | binario upstream verificado |
@@ -29,7 +29,9 @@ EXP-01 y el handoff versionado son la frontera contractual. Archive Workbench AI
 
 La revisión fijada es `llama.cpp b10903`, commit `481c65f091f74c5e7089dd0a3a1cc6b50cced31e`.
 
-Esta matriz describe **rutas de instalación disponibles**, no una afirmación de que todos los perfiles/modelos hayan sido validados físicamente en cada combinación. El cierre H24 se realizó sobre Linux/NVIDIA RTX 3090. L12 mantiene pendiente su gate específico en hardware físico de 12 GB.
+El runtime NVIDIA Linux x86_64 se construyó en GitHub Actions sin GPU del runner, pasó las validaciones de dependencias dinámicas y se identificó con SHA-256 `d41bb204eb09995bfe387950435ddd84635aaaed28fade425d7d35c1bb2cee89`. Para mantener el código privado durante los gates manuales, los binarios candidatos se publican separadamente en `alexdcolman/archive-workbench-ai-dist`.
+
+Esta matriz describe **rutas de instalación disponibles**, no una afirmación de que todos los perfiles/modelos hayan sido validados físicamente en cada combinación. El cierre H24 previo se realizó sobre Linux/NVIDIA RTX 3090. L12 mantiene pendiente su gate específico en hardware físico de 12 GB.
 
 ## Directorios de datos
 
@@ -78,4 +80,10 @@ Los launchers administrados de Archive Workbench deben descubrir la instalación
 
 Las candidatas nativas se construyen en GitHub Actions sobre runners de la plataforma correspondiente. El workflow produce un `.deb` para Ubuntu x64, un instalador por usuario para Windows x64 y DMG para macOS Intel/Apple Silicon. Cada job ejecuta smoke del binario congelado (`--version`, estado de Setup y ciclo `bridge start/status/stop`) antes de publicar el artefacto de Actions.
 
-El runtime NVIDIA de Linux se construye en un workflow separado dentro de una imagen de desarrollo CUDA, a partir del commit fijado de `llama.cpp`. La construcción no usa la GPU ni la toolchain de la computadora usuaria. El artefacto resultante no entra al catálogo hasta obtener su SHA-256 y superar el smoke material en Ubuntu/NVIDIA.
+El runtime NVIDIA de Linux se construye en un workflow separado dentro de una imagen de desarrollo CUDA, a partir del commit fijado de `llama.cpp`. La construcción no usa la GPU ni la toolchain de la computadora usuaria. El runtime CUDA 12.8 x64 que cerró este gate se reutiliza sin recompilar; sólo los instaladores nativos deben reconstruirse después de incorporar su URL+SHA al catálogo.
+
+## Repositorio público de binarios candidatos
+
+Durante la validación previa al release público, el código fuente de Archive Workbench AI puede permanecer privado. Los artefactos que necesita el recorrido cero-terminal se publican en `alexdcolman/archive-workbench-ai-dist`, release candidato `v0.1.0.dev24`.
+
+Ese repositorio contiene únicamente binarios/instaladores y checksums. No reemplaza el repositorio fuente ni altera el versionado del protocolo. La validación manual debe descargar exactamente esos assets.

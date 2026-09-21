@@ -6,6 +6,10 @@ PINNED_LLAMA_BUILD = 10903
 PINNED_LLAMA_TAG = "b10903"
 PINNED_LLAMA_COMMIT = "481c65f091f74c5e7089dd0a3a1cc6b50cced31e"
 
+DIST_REPOSITORY = "alexdcolman/archive-workbench-ai-dist"
+DIST_RELEASE_TAG = "v0.1.0.dev24"
+_DIST_BASE = f"https://github.com/{DIST_REPOSITORY}/releases/download/{DIST_RELEASE_TAG}"
+
 
 @dataclass(frozen=True, slots=True)
 class RuntimeAsset:
@@ -20,6 +24,7 @@ class RuntimePackage:
     machine: str
     variant: str
     assets: tuple[RuntimeAsset, ...] = ()
+    source: str = "upstream-release"
     source_build: bool = False
 
 
@@ -28,6 +33,10 @@ _BASE = f"https://github.com/ggml-org/llama.cpp/releases/download/{PINNED_LLAMA_
 
 def _asset(filename: str, sha256: str) -> RuntimeAsset:
     return RuntimeAsset(filename=filename, url=f"{_BASE}/{filename}", sha256=sha256)
+
+
+def _managed_asset(filename: str, sha256: str) -> RuntimeAsset:
+    return RuntimeAsset(filename=filename, url=f"{_DIST_BASE}/{filename}", sha256=sha256)
 
 
 RUNTIME_PACKAGES: tuple[RuntimePackage, ...] = (
@@ -43,7 +52,13 @@ RUNTIME_PACKAGES: tuple[RuntimePackage, ...] = (
         "cpu",
         (_asset("llama-b10903-bin-ubuntu-arm64.tar.gz", "dfa3e27e204c5322c29419baf4b57df4aa4a30d49d9d55cbf19863e6697fdcb5"),),
     ),
-    RuntimePackage("linux", "x86_64", "nvidia", source_build=True),
+    RuntimePackage(
+        "linux",
+        "x86_64",
+        "nvidia",
+        (_managed_asset("llama-b10903-bin-ubuntu-cuda-12.8-x64.tar.gz", "d41bb204eb09995bfe387950435ddd84635aaaed28fade425d7d35c1bb2cee89"),),
+        source="archive-workbench-ai-dist",
+    ),
     RuntimePackage("linux", "aarch64", "nvidia", source_build=True),
     RuntimePackage(
         "darwin",

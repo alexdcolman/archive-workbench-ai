@@ -6,7 +6,7 @@ import unittest
 from unittest import mock
 
 from archive_workbench_ai.errors import RuntimeUnavailableError
-from archive_workbench_ai.runtime_catalog import RuntimePackage
+from archive_workbench_ai.runtime_catalog import RuntimePackage, runtime_package
 import archive_workbench_ai.runtime_manager as runtime_manager
 
 
@@ -46,6 +46,44 @@ class NativeDistributionTests(unittest.TestCase):
                     runtime_manager.install_runtime(variant="auto", force=True, allow_source_build=False)
             self.assertEqual(marker.read_text(encoding="utf-8"), "preservar")
 
+    def test_linux_x64_nvidia_catalog_uses_managed_precompiled_runtime(self) -> None:
+        package = runtime_package("linux", "x86_64", "nvidia")
+        self.assertIsNotNone(package)
+        assert package is not None
+        self.assertFalse(package.source_build)
+        self.assertEqual(package.source, "archive-workbench-ai-dist")
+        self.assertEqual(len(package.assets), 1)
+        asset = package.assets[0]
+        self.assertEqual(asset.filename, "llama-b10903-bin-ubuntu-cuda-12.8-x64.tar.gz")
+        self.assertEqual(
+            asset.sha256,
+            "d41bb204eb09995bfe387950435ddd84635aaaed28fade425d7d35c1bb2cee89",
+        )
+        self.assertEqual(
+            asset.url,
+            "https://github.com/alexdcolman/archive-workbench-ai-dist/releases/download/"
+            "v0.1.0.dev24/llama-b10903-bin-ubuntu-cuda-12.8-x64.tar.gz",
+        )
+
+    def test_downloaded_runtime_marker_uses_package_provenance(self) -> None:
+        package = RuntimePackage(
+            "linux",
+            "x86_64",
+            "nvidia",
+            source="archive-workbench-ai-dist",
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            executable = root / "llama-server"
+            executable.write_text("binary", encoding="utf-8")
+            marker = runtime_manager._write_marker(
+                root,
+                package=package,
+                executable=executable,
+                source=package.source,
+            )
+        self.assertEqual(marker["source"], "archive-workbench-ai-dist")
+
     def test_native_build_workflow_covers_zero_terminal_platform_candidates(self) -> None:
         source = (ROOT / ".github" / "workflows" / "build-native.yml").read_text(encoding="utf-8")
         for expected in (
@@ -75,6 +113,7 @@ class NativeDistributionTests(unittest.TestCase):
         self.assertIn("{localappdata}\\Programs\\Archive Workbench AI", iss)
         self.assertIn("PrivilegesRequired=lowest", iss)
         self.assertIn("wscript.exe", iss)
+        self.assertIn('Source: "setup.vbs"', iss)
         self.assertIn("shell.Run cmd, 0, False", vbs)
 
     def test_macos_bundle_matches_managed_discovery_and_uses_valid_bundle_version(self) -> None:

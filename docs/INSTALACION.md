@@ -2,7 +2,7 @@
 
 Archive Workbench AI se instala como un componente separado de Archive Workbench. El ejecutable de la aplicación, el runtime `llama.cpp` y los modelos tienen ciclos de instalación y actualización independientes.
 
-La ruta pública administrada no requiere Python ni terminal. Archive Workbench AI Setup ya implementa la preparación gráfica de runtime/modelo y el estado del compañero local. Los paquetes nativos todavía deben construirse y validarse como candidatas antes del primer release público. Las instrucciones desde fuente de esta sección son sólo para desarrollo y diagnóstico.
+La ruta pública administrada no requiere Python ni terminal. Archive Workbench AI Setup implementa la preparación gráfica de runtime/modelo y el estado del compañero local. Las candidatas nativas y el runtime NVIDIA ya tienen builds técnicos reproducibles; antes del release público todavía deben completar la validación manual final Windows CPU, Ubuntu CPU y Ubuntu GPU NVIDIA. Las instrucciones desde fuente de esta sección son sólo para desarrollo y diagnóstico.
 
 ## 1. Instalación técnica desde fuente
 
@@ -33,7 +33,6 @@ aw-ai --version
 aw-ai capabilities --json
 ```
 
-
 ## Archive Workbench AI Setup
 
 El Setup administrado es una interfaz local abierta en el navegador por el ejecutable nativo. Escucha únicamente en `127.0.0.1`, no usa recursos web externos y requiere una autorización efímera para las acciones que modifican la instalación. La vista de estado es pasiva: abrirla no instala runtime, no descarga modelos y no inicia inferencia.
@@ -48,13 +47,15 @@ En instalación técnica, el comando es:
 aw-ai runtime install --variant auto
 ```
 
-Archive Workbench AI Setup ofrece la operación equivalente mediante interfaz gráfica en la distribución administrada. `auto` selecciona una variante según el sistema y el hardware detectado. La distribución actual fija `llama.cpp b10903`, commit `481c65f091f74c5e7089dd0a3a1cc6b50cced31e`. Los binarios descargados se verifican por SHA-256 antes de instalarse.
+Archive Workbench AI Setup ofrece la operación equivalente mediante interfaz gráfica en la distribución administrada. `auto` selecciona una variante según el sistema y el hardware detectado. La distribución fija `llama.cpp b10903`, commit `481c65f091f74c5e7089dd0a3a1cc6b50cced31e`. Los binarios descargados se verifican por SHA-256 antes de instalarse.
 
 ### Linux
 
 En CPU x86_64 o arm64 se utiliza el binario publicado por `llama.cpp` para Ubuntu.
 
-En NVIDIA, el release upstream fijado no publica un binario CUDA de host equivalente al requerido por este proyecto. La ruta técnica desde fuente todavía puede compilar la revisión fijada con Git, CMake, CUDA Toolkit y un compilador compatible. **Archive Workbench AI Setup no ejecuta esa compilación.** El workflow administrado construye fuera del equipo usuario un runtime NVIDIA candidato; sólo después de verificarlo y fijar su SHA-256 se incorporará al catálogo. El controlador NVIDIA seguirá perteneciendo al sistema anfitrión.
+En NVIDIA x86_64 se utiliza el runtime administrado precompilado `llama-b10903-bin-ubuntu-cuda-12.8-x64.tar.gz`, construido fuera de la computadora usuaria desde el commit fijado. Su SHA-256 es `d41bb204eb09995bfe387950435ddd84635aaaed28fade425d7d35c1bb2cee89`. El asset se distribuye desde el repositorio público de binarios `alexdcolman/archive-workbench-ai-dist`, release candidato `v0.1.0.dev24`. El controlador NVIDIA pertenece al sistema anfitrión y no se empaqueta.
+
+Archive Workbench AI Setup descarga ese runtime y no compila Git, CMake ni CUDA Toolkit en la computadora usuaria. Linux NVIDIA arm64 no se declara como plataforma administrada del primer release.
 
 ### Windows
 
@@ -119,7 +120,6 @@ Después de instalar runtime y modelos, la inferencia no necesita red. Los coman
 ## Compatibilidad con instalaciones anteriores
 
 El código conserva lectura de las variables `AW_AI01_*` y, cuando corresponde, del directorio histórico `archive-workbench-ai01` para permitir una transición sin volver a descargar pesos. Las instalaciones nuevas deben usar `AW_AI_*` y `archive-workbench-ai`.
-
 
 ## Integración administrada
 
