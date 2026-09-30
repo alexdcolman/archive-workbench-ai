@@ -51,7 +51,9 @@ def build_result_bundle(
 ) -> dict[str, Any]:
     started_at = _utc_now()
     start = time.perf_counter()
-    prompt_text = resources.files("archive_workbench_ai.prompts").joinpath("vision_describe_0_1.txt").read_text(encoding="utf-8")
+    prompt_text = resources.files("archive_workbench_ai").joinpath(
+        "prompts", "vision_describe_0_1.txt"
+    ).read_text(encoding="utf-8")
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="aw_ai_p1_") as tmp_name:

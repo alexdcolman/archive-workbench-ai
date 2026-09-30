@@ -38,6 +38,14 @@ jobs:
           ./dist/aw-ai bridge start --json > native-linux-bridge-start.json
           ./dist/aw-ai bridge status --json > native-linux-bridge-status.json
           ./dist/aw-ai bridge stop --json > native-linux-bridge-stop.json
+          python scripts/make_demo_job.py --output native-linux-smoke
+          ./dist/aw-ai analyze \
+            --input native-linux-smoke/exp01.zip \
+            --output native-linux-smoke/handoff.zip \
+            --result-output native-linux-smoke/result.zip \
+            --profile H24 --backend mock > native-linux-analyze.json
+          test -s native-linux-smoke/handoff.zip
+          test -s native-linux-smoke/result.zip
           VERSION=$(python -c 'import archive_workbench_ai; print(archive_workbench_ai.__version__)')
           python packaging/linux/build_deb.py --binary dist/aw-ai --version "$VERSION" --output-dir native-dist
           sha256sum native-dist/*.deb > native-dist/SHA256SUMS.txt
@@ -48,6 +56,7 @@ jobs:
             native-dist/*.deb
             native-dist/SHA256SUMS.txt
             native-linux-*.json
+            native-linux-smoke/*.zip
 
   windows-x64:
     if: ${{ inputs.target == 'all' || inputs.target == 'windows-x64' }}
@@ -70,6 +79,10 @@ jobs:
           .\dist\aw-ai.exe bridge start --json | Out-File -Encoding utf8 native-windows-bridge-start.json
           .\dist\aw-ai.exe bridge status --json | Out-File -Encoding utf8 native-windows-bridge-status.json
           .\dist\aw-ai.exe bridge stop --json | Out-File -Encoding utf8 native-windows-bridge-stop.json
+          python scripts\make_demo_job.py --output native-windows-smoke
+          .\dist\aw-ai.exe analyze --input native-windows-smoke\exp01.zip --output native-windows-smoke\handoff.zip --result-output native-windows-smoke\result.zip --profile H24 --backend mock | Out-File -Encoding utf8 native-windows-analyze.json
+          if (-not (Test-Path native-windows-smoke\handoff.zip)) { throw "Native analyze smoke did not create handoff.zip" }
+          if (-not (Test-Path native-windows-smoke\result.zip)) { throw "Native analyze smoke did not create result.zip" }
           choco install innosetup --no-progress -y
           $env:AWAI_VERSION = (python -c "import archive_workbench_ai; print(archive_workbench_ai.__version__)")
           $env:AWAI_BINARY = (Resolve-Path .\dist\aw-ai.exe).Path
@@ -87,6 +100,7 @@ jobs:
             native-dist/*.exe
             native-dist/SHA256SUMS.txt
             native-windows-*.json
+            native-windows-smoke/*.zip
 
   macos:
     if: ${{ inputs.target == 'all' || inputs.target == 'macos' }}
@@ -115,6 +129,14 @@ jobs:
           ./dist/aw-ai bridge start --json > native-macos-bridge-start.json
           ./dist/aw-ai bridge status --json > native-macos-bridge-status.json
           ./dist/aw-ai bridge stop --json > native-macos-bridge-stop.json
+          python scripts/make_demo_job.py --output native-macos-smoke
+          ./dist/aw-ai analyze \
+            --input native-macos-smoke/exp01.zip \
+            --output native-macos-smoke/handoff.zip \
+            --result-output native-macos-smoke/result.zip \
+            --profile H24 --backend mock > native-macos-analyze.json
+          test -s native-macos-smoke/handoff.zip
+          test -s native-macos-smoke/result.zip
           VERSION=$(python -c 'import archive_workbench_ai; print(archive_workbench_ai.__version__)')
           mkdir -p native-dist
           packaging/macos/build_app.sh dist/aw-ai "$VERSION" native-dist
@@ -126,3 +148,4 @@ jobs:
             native-dist/*.dmg
             native-dist/SHA256SUMS.txt
             native-macos-*.json
+            native-macos-smoke/*.zip

@@ -1,3 +1,9 @@
+## 0.1.0.dev25 — reparación del análisis en binarios nativos
+
+- Corrige la carga del prompt `vision_describe_0_1.txt` en ejecutables PyInstaller sin depender del submódulo dinámico `archive_workbench_ai.prompts`.
+- Agrega un smoke obligatorio de `analyze --backend mock` sobre el binario congelado en Linux, Windows y macOS.
+- Mantiene sin cambios los protocolos, el handoff, el runtime `llama.cpp b10903` y los modelos instalados fuera del ejecutable.
+
 ## 0.1.0.dev24 — Setup gráfico y candidatas nativas
 
 - Agrega Archive Workbench AI Setup como interfaz local sin terminal para estado y preparación explícita de perfiles.

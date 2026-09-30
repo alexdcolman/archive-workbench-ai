@@ -85,7 +85,7 @@ Durante esas tres validaciones no se configura nada por terminal, no se exportan
 
 ## Gates de distribución nativa administrada
 
-Antes de cualquier release público de Archive Workbench AI deben quedar verdes los workflows `build-native.yml` y `build-linux-nvidia-runtime.yml`. Los paquetes nativos deben ejecutar el smoke del binario congelado y conservar checksums.
+Antes de cualquier release público de Archive Workbench AI deben quedar verdes los workflows `build-native.yml` y `build-linux-nvidia-runtime.yml`. Los paquetes nativos deben ejecutar el smoke del binario congelado, incluyendo un `analyze --backend mock` que produzca result/handoff, y conservar checksums.
 
 El runtime NVIDIA candidato ya quedó construido desde el commit fijado y tiene SHA-256 registrado. Después de fijar su URL en el catálogo debe ejecutarse una última construcción corta de los instaladores nativos para que incorporen ese catálogo. El runtime CUDA no se recompila.
 

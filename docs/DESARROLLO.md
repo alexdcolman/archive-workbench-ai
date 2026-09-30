@@ -44,3 +44,7 @@ Runtime y modelos viven fuera del repositorio. Las pruebas no deben depender de 
 ## Evidencia histórica
 
 `docs/history/` conserva documentación de las fases y benchmarks previos. No representa instrucciones actuales de instalación y no debe usarse como fuente para el flujo público vigente.
+
+## Smoke de ejecutable nativo
+
+Toda candidata nativa debe ejecutar `analyze --backend mock` sobre el binario congelado de PyInstaller y verificar que se produzcan `result.zip` y `handoff.zip`. Este gate complementa `--version`, Setup y bridge, y detecta recursos o imports dinámicos ausentes del ejecutable.

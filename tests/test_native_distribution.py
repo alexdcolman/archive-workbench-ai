@@ -95,9 +95,19 @@ class NativeDistributionTests(unittest.TestCase):
             "bridge start --json",
             "bridge stop --json",
             "PyInstaller",
+            "--backend mock",
+            "native-linux-smoke/exp01.zip",
+            "native-windows-smoke\\exp01.zip",
+            "native-macos-smoke/exp01.zip",
             "shasum -a 256 native-dist/*.dmg",
         ):
             self.assertIn(expected, source)
+        self.assertGreaterEqual(source.count(" analyze "), 3)
+
+    def test_prompt_resource_does_not_require_dynamic_prompts_submodule(self) -> None:
+        source = (ROOT / "src" / "archive_workbench_ai" / "result_bundle.py").read_text(encoding="utf-8")
+        self.assertIn('resources.files("archive_workbench_ai").joinpath(', source)
+        self.assertNotIn('resources.files("archive_workbench_ai.prompts")', source)
 
     def test_linux_package_installs_managed_binary_and_graphical_launcher(self) -> None:
         builder = (ROOT / "packaging" / "linux" / "build_deb.py").read_text(encoding="utf-8")
