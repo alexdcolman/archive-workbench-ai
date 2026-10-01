@@ -1,3 +1,9 @@
+## 0.1.0.dev28 — lifecycle del bridge PyInstaller onefile
+
+- El daemon congelado iniciado por `bridge start` se relanza como instancia PyInstaller independiente mediante `PYINSTALLER_RESET_ENVIRONMENT=1`, evitando que pierda prompts/esquemas cuando termina el proceso iniciador y se elimina su `_MEI`.
+- El workflow nativo conserva el smoke directo `analyze --backend mock` y agrega un smoke de daemon que crea un job después de terminar `bridge start`, exige que el bridge siga vivo y rechaza errores de recursos `_MEI`.
+- El runtime NVIDIA dev27, modelos, protocolo y handoff no cambian.
+
 ## 0.1.0.dev26 — runtime NVIDIA sin NCCL y diagnóstico estricto
 
 - recompila el candidato Linux/NVIDIA de llama.cpp b10903 con `GGML_CUDA_NCCL=OFF` para eliminar la dependencia accidental de `libnccl.so.2`;

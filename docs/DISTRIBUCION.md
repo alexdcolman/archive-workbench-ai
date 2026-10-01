@@ -92,3 +92,9 @@ Ese repositorio contiene únicamente binarios/instaladores y checksums. No reemp
 ### Runtime Linux/NVIDIA
 
 El runtime administrado NVIDIA debe ser autocontenido respecto de CUDA/cuBLAS y conservar OpenMP sin exigir paquetes adicionales al host; por eso empaqueta también `libgomp.so.1` y su aviso de licencia. No depende de NCCL. La única dependencia GPU que permanece deliberadamente fuera del tar es `libcuda.so.1`, resuelta por el driver NVIDIA del host. Los candidatos se validan en un entorno Linux limpio además del contenedor de compilación CUDA.
+
+### Lifecycle del compañero nativo
+
+El ejecutable nativo `--onefile` inicia el compañero local en un proceso independiente con su propia extracción PyInstaller. Esto permite que el daemon sobreviva a la finalización de `bridge start` sin perder recursos empaquetados. El gate nativo verifica este comportamiento además del análisis mock directo.
+
+El candidato Linux/NVIDIA dev27 construido por Actions (`36908018496`) quedó validado físicamente con SHA-256 `b0b02cf52a910e1ec1addf58491c9896dd73c06383e0d5ba8884a852658e56bf`: no enlaza NCCL, resuelve OpenMP desde `libgomp.so.1` empaquetada y ejecuta llama.cpp b10903 en un host NVIDIA real. Este hash todavía no sustituye al asset del catálogo hasta publicarlo en una URL inmutable y reconstruir la candidata nativa que congele ese catálogo.

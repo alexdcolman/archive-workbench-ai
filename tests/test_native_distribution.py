@@ -99,10 +99,26 @@ class NativeDistributionTests(unittest.TestCase):
             "native-linux-smoke/exp01.zip",
             "native-windows-smoke\\exp01.zip",
             "native-macos-smoke/exp01.zip",
+            "native_bridge_daemon_smoke.py",
+            "native-linux-daemon-smoke.json",
+            "native-windows-daemon-smoke.json",
+            "native-macos-daemon-smoke.json",
             "shasum -a 256 native-dist/*.dmg",
         ):
             self.assertIn(expected, source)
         self.assertGreaterEqual(source.count(" analyze "), 3)
+
+
+    def test_frozen_bridge_daemon_resets_pyinstaller_environment(self) -> None:
+        source = (ROOT / "src" / "archive_workbench_ai" / "bridge.py").read_text(encoding="utf-8")
+        self.assertIn('child_env["PYINSTALLER_RESET_ENVIRONMENT"] = "1"', source)
+        self.assertIn('kwargs["env"] = child_env', source)
+
+    def test_native_daemon_smoke_rejects_lost_mei_resources(self) -> None:
+        source = (ROOT / "scripts" / "native_bridge_daemon_smoke.py").read_text(encoding="utf-8")
+        self.assertIn('"_MEI"', source)
+        self.assertIn('"vision_describe_0_1.txt"', source)
+        self.assertIn('"resource_lifetime": "ok"', source)
 
     def test_prompt_resource_does_not_require_dynamic_prompts_submodule(self) -> None:
         source = (ROOT / "src" / "archive_workbench_ai" / "result_bundle.py").read_text(encoding="utf-8")

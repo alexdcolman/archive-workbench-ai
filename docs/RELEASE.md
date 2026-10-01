@@ -97,3 +97,9 @@ Antes de promover los instaladores a release público definitivo, registrar tamb
 ### Gate adicional del runtime NVIDIA
 
 Antes de fijar un nuevo hash del runtime Linux/NVIDIA, el workflow debe compilar con NCCL deshabilitado, conservar OpenMP mediante `libgomp.so.1` empaquetada junto con su aviso de licencia, rechazar cualquier `libnccl.so*` empaquetada o enlazada y ejecutar la inspección de dependencias en un contenedor Linux limpio. Fuera del tar sólo puede quedar sin resolver `libcuda.so.1`, provista por el driver NVIDIA del host. El catálogo publicado no se actualiza hasta disponer del SHA-256 del artefacto candidato y una validación física satisfactoria.
+
+### Gate del daemon PyInstaller
+
+Para cada candidata nativa, el workflow debe comprobar no sólo `bridge start/status/stop` y `analyze --backend mock`, sino también que un daemon `--onefile` siga pudiendo acceder a recursos empaquetados después de que el proceso `bridge start` haya terminado. Un error que apunte a un directorio temporal `_MEI` invalida la candidata.
+
+El candidato Linux/NVIDIA dev27 construido por Actions (`36908018496`) quedó validado físicamente con SHA-256 `b0b02cf52a910e1ec1addf58491c9896dd73c06383e0d5ba8884a852658e56bf`: no enlaza NCCL, resuelve OpenMP desde `libgomp.so.1` empaquetada y ejecuta llama.cpp b10903 en un host NVIDIA real. Este hash todavía no sustituye al asset del catálogo hasta publicarlo en una URL inmutable y reconstruir la candidata nativa que congele ese catálogo.

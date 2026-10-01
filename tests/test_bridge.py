@@ -163,9 +163,11 @@ class BridgeTests(unittest.TestCase):
                 from archive_workbench_ai.bridge import start_bridge
                 start_bridge(root, wait_seconds=0.2)
             command = popen.call_args.args[0]
+            kwargs = popen.call_args.kwargs
             self.assertEqual(command[0], __import__("sys").executable)
             self.assertEqual(command[1:3], ["bridge", "serve"])
             self.assertNotIn("-m", command)
+            self.assertEqual(kwargs["env"]["PYINSTALLER_RESET_ENVIRONMENT"], "1")
 
 
 if __name__ == "__main__":

@@ -53,3 +53,7 @@ Toda candidata nativa debe ejecutar `analyze --backend mock` sobre el binario co
 ## Gate del runtime NVIDIA Linux
 
 El candidato Linux/NVIDIA se compila con NCCL deshabilitado (`GGML_CUDA_NCCL=OFF`) y se valida también fuera de la imagen CUDA usada para compilar. OpenMP permanece habilitado y `libgomp.so.1` se empaqueta con su aviso de licencia para que no dependa de paquetes adicionales del host. El tar no debe contener NCCL ni dependencias compartidas no resueltas distintas de `libcuda.so.1`, que pertenece al driver NVIDIA del host. `runtime inspect` y `doctor` sólo consideran disponible un runtime cuyo `--version` puede ejecutarse correctamente.
+
+### Gate de lifecycle del bridge congelado
+
+Las candidatas PyInstaller `--onefile` deben iniciar el daemon del bridge como una instancia independiente. `bridge start` fija `PYINSTALLER_RESET_ENVIRONMENT=1` al relanzar el mismo ejecutable congelado, porque el daemon sobrevive al proceso iniciador y no puede reutilizar su directorio temporal `_MEI`. El workflow nativo ejecuta un smoke específico que entrega un job al daemon después de que `bridge start` terminó y rechaza pérdidas de prompts/esquemas empaquetados.

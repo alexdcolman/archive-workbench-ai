@@ -418,6 +418,14 @@ def start_bridge(root: Path | None = None, *, wait_seconds: float = 10.0) -> dic
     try:
         if getattr(sys, "frozen", False):
             command = [sys.executable, "bridge", "serve", "--root", str(root)]
+            # PyInstaller onefile subprocesses normally reuse the parent _MEI
+            # extraction. A detached bridge outlives ``bridge start``, so it
+            # must unpack as an independent top-level application instance.
+            # Otherwise the parent removes _MEI and the daemon later loses
+            # packaged resources such as prompts and schemas.
+            child_env = os.environ.copy()
+            child_env["PYINSTALLER_RESET_ENVIRONMENT"] = "1"
+            kwargs["env"] = child_env
         else:
             command = [
                 sys.executable,

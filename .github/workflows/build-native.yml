@@ -46,6 +46,11 @@ jobs:
             --profile H24 --backend mock > native-linux-analyze.json
           test -s native-linux-smoke/handoff.zip
           test -s native-linux-smoke/result.zip
+          python scripts/native_bridge_daemon_smoke.py \
+            --binary dist/aw-ai \
+            --input native-linux-smoke/exp01.zip \
+            --root native-linux-daemon-bridge \
+            --output native-linux-daemon-smoke.json
           VERSION=$(python -c 'import archive_workbench_ai; print(archive_workbench_ai.__version__)')
           python packaging/linux/build_deb.py --binary dist/aw-ai --version "$VERSION" --output-dir native-dist
           sha256sum native-dist/*.deb > native-dist/SHA256SUMS.txt
@@ -83,6 +88,7 @@ jobs:
           .\dist\aw-ai.exe analyze --input native-windows-smoke\exp01.zip --output native-windows-smoke\handoff.zip --result-output native-windows-smoke\result.zip --profile H24 --backend mock | Out-File -Encoding utf8 native-windows-analyze.json
           if (-not (Test-Path native-windows-smoke\handoff.zip)) { throw "Native analyze smoke did not create handoff.zip" }
           if (-not (Test-Path native-windows-smoke\result.zip)) { throw "Native analyze smoke did not create result.zip" }
+          python scripts\native_bridge_daemon_smoke.py --binary dist\aw-ai.exe --input native-windows-smoke\exp01.zip --root native-windows-daemon-bridge --output native-windows-daemon-smoke.json
           choco install innosetup --no-progress -y
           $env:AWAI_VERSION = (python -c "import archive_workbench_ai; print(archive_workbench_ai.__version__)")
           $env:AWAI_BINARY = (Resolve-Path .\dist\aw-ai.exe).Path
@@ -137,6 +143,11 @@ jobs:
             --profile H24 --backend mock > native-macos-analyze.json
           test -s native-macos-smoke/handoff.zip
           test -s native-macos-smoke/result.zip
+          python scripts/native_bridge_daemon_smoke.py \
+            --binary dist/aw-ai \
+            --input native-macos-smoke/exp01.zip \
+            --root native-macos-daemon-bridge \
+            --output native-macos-daemon-smoke.json
           VERSION=$(python -c 'import archive_workbench_ai; print(archive_workbench_ai.__version__)')
           mkdir -p native-dist
           packaging/macos/build_app.sh dist/aw-ai "$VERSION" native-dist
