@@ -57,6 +57,13 @@ jobs:
                 test "$copied" -eq 1
               done
 
+              LIBGOMP_PATH="$(gcc -print-file-name=libgomp.so.1)"
+              test -f "$LIBGOMP_PATH"
+              cp -L "$LIBGOMP_PATH" /stage/lib/libgomp.so.1
+              mkdir -p /stage/licenses
+              test -f /usr/share/doc/libgomp1/copyright
+              cp /usr/share/doc/libgomp1/copyright /stage/licenses/libgomp1-copyright
+
               CUDA_BACKEND=""
               for candidate in /stage/lib/libggml-cuda.so*; do
                 if [ -f "$candidate" ]; then
@@ -89,6 +96,8 @@ jobs:
                 echo "El staging contiene NCCL; este runtime debe ser autocontenido sin NCCL." >&2
                 exit 1
               fi
+              test -f /stage/lib/libgomp.so.1
+              test -f /stage/licenses/libgomp1-copyright
 
               STUB_DIR="$CUDA_LIB_ROOT/stubs"
               test -f "$STUB_DIR/libcuda.so"
@@ -138,6 +147,8 @@ jobs:
                 echo "El runtime candidato empaqueta NCCL y es inválido." >&2
                 exit 1
               fi
+              test -f /candidate/lib/libgomp.so.1
+              test -f /candidate/licenses/libgomp1-copyright
               CUDA_BACKEND=""
               for candidate in /candidate/lib/libggml-cuda.so*; do
                 if [ -f "$candidate" ]; then CUDA_BACKEND="$candidate"; break; fi

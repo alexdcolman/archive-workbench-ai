@@ -9,6 +9,13 @@ El backend de inferencia local es `llama.cpp`, desarrollado por ggml-org. Archiv
 - Proyecto: <https://github.com/ggml-org/llama.cpp>
 - Release fijada por el corte actual: `b10903`, commit `481c65f091f74c5e7089dd0a3a1cc6b50cced31e`.
 
+## GNU OpenMP runtime (`libgomp`)
+
+El runtime administrado Linux x86_64/NVIDIA incluye `libgomp.so.1` para conservar el soporte OpenMP de `llama.cpp` sin exigir una instalación adicional en el sistema anfitrión. `libgomp` forma parte de GCC y conserva sus propios términos de licencia, incluida la GCC Runtime Library Exception aplicable. El tar del runtime incluye una copia del aviso de copyright/licencia del paquete `libgomp1` usado para construirlo.
+
+- Proyecto: <https://gcc.gnu.org/>
+- Componente: GNU Offloading and Multi Processing Runtime Library (`libgomp`).
+
 ## Modelos
 
 Los pesos de modelos no forman parte del repositorio, del wheel ni del ZIP de Archive Workbench AI. `aw-ai models pull` descarga únicamente el modelo solicitado y verifica los hashes conocidos por el catálogo del proyecto. Cada modelo queda sujeto a los términos publicados por su proveedor o repositorio de origen.

@@ -91,4 +91,4 @@ Ese repositorio contiene únicamente binarios/instaladores y checksums. No reemp
 
 ### Runtime Linux/NVIDIA
 
-El runtime administrado NVIDIA debe ser autocontenido respecto de CUDA/cuBLAS y no depender de NCCL. La única dependencia GPU que permanece deliberadamente fuera del tar es `libcuda.so.1`, resuelta por el driver NVIDIA del host. Los candidatos se validan en un entorno Linux limpio además del contenedor de compilación CUDA.
+El runtime administrado NVIDIA debe ser autocontenido respecto de CUDA/cuBLAS y conservar OpenMP sin exigir paquetes adicionales al host; por eso empaqueta también `libgomp.so.1` y su aviso de licencia. No depende de NCCL. La única dependencia GPU que permanece deliberadamente fuera del tar es `libcuda.so.1`, resuelta por el driver NVIDIA del host. Los candidatos se validan en un entorno Linux limpio además del contenedor de compilación CUDA.

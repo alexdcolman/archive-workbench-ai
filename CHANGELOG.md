@@ -5,6 +5,14 @@
 - `detect_runtime` deja de declarar disponible un ejecutable cuyo `--version` termina con error y conserva el detalle de los probes fallidos en `runtime inspect`/`doctor`;
 - no cambia protocolos, handoff, modelos ni el catálogo publicado hasta construir y verificar el nuevo runtime candidato.
 
+## 0.1.0.dev27 — runtime NVIDIA autocontenido con OpenMP
+
+- Mantiene `GGML_CUDA_NCCL=OFF` y el gate externo introducido en dev26.
+- Empaqueta `libgomp.so.1` junto al runtime Linux/NVIDIA para conservar OpenMP sin exigir dependencias de sistema al usuario.
+- Incluye el aviso de copyright/licencia de `libgomp1` dentro del tar administrado.
+- El gate en Ubuntu 24.04 limpio sigue admitiendo como única dependencia no resuelta `libcuda.so.1`, provista por el driver NVIDIA del host.
+- El catálogo público permanece sin cambios hasta obtener SHA-256 y validación física del nuevo candidato.
+
 ## 0.1.0.dev25 — reparación del análisis en binarios nativos
 
 - Corrige la carga del prompt `vision_describe_0_1.txt` en ejecutables PyInstaller sin depender del submódulo dinámico `archive_workbench_ai.prompts`.

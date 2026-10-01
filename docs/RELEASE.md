@@ -96,4 +96,4 @@ Antes de promover los instaladores a release público definitivo, registrar tamb
 
 ### Gate adicional del runtime NVIDIA
 
-Antes de fijar un nuevo hash del runtime Linux/NVIDIA, el workflow debe compilar con NCCL deshabilitado, rechazar cualquier `libnccl.so*` empaquetada o enlazada y ejecutar la inspección de dependencias en un contenedor Linux limpio. El catálogo publicado no se actualiza hasta disponer del SHA-256 del artefacto candidato y una validación física satisfactoria.
+Antes de fijar un nuevo hash del runtime Linux/NVIDIA, el workflow debe compilar con NCCL deshabilitado, conservar OpenMP mediante `libgomp.so.1` empaquetada junto con su aviso de licencia, rechazar cualquier `libnccl.so*` empaquetada o enlazada y ejecutar la inspección de dependencias en un contenedor Linux limpio. Fuera del tar sólo puede quedar sin resolver `libcuda.so.1`, provista por el driver NVIDIA del host. El catálogo publicado no se actualiza hasta disponer del SHA-256 del artefacto candidato y una validación física satisfactoria.

@@ -52,4 +52,4 @@ Toda candidata nativa debe ejecutar `analyze --backend mock` sobre el binario co
 
 ## Gate del runtime NVIDIA Linux
 
-El candidato Linux/NVIDIA se compila con NCCL deshabilitado (`GGML_CUDA_NCCL=OFF`) y se valida también fuera de la imagen CUDA usada para compilar. El tar no debe contener NCCL ni dependencias compartidas no resueltas distintas de `libcuda.so.1`, que pertenece al driver NVIDIA del host. `runtime inspect` y `doctor` sólo consideran disponible un runtime cuyo `--version` puede ejecutarse correctamente.
+El candidato Linux/NVIDIA se compila con NCCL deshabilitado (`GGML_CUDA_NCCL=OFF`) y se valida también fuera de la imagen CUDA usada para compilar. OpenMP permanece habilitado y `libgomp.so.1` se empaqueta con su aviso de licencia para que no dependa de paquetes adicionales del host. El tar no debe contener NCCL ni dependencias compartidas no resueltas distintas de `libcuda.so.1`, que pertenece al driver NVIDIA del host. `runtime inspect` y `doctor` sólo consideran disponible un runtime cuyo `--version` puede ejecutarse correctamente.
