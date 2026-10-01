@@ -142,12 +142,16 @@ class NativeDistributionTests(unittest.TestCase):
             "nvidia/cuda:12.8.1-devel-ubuntu24.04",
             "llama-b10903-bin-ubuntu-cuda-12.8-x64.tar.gz",
             "Free disk space for CUDA candidate build",
+            "-DGGML_CUDA_NCCL=OFF",
             "-DCMAKE_EXE_LINKER_FLAGS=-Wl,--allow-shlib-undefined",
             'cmake --build /build --config Release --target llama-server -j"$(nproc)"',
             "CUDA_LIB_ROOT=/usr/local/cuda/targets/x86_64-linux/lib",
             'LD_LIBRARY_PATH="/tmp/driver-stub:/stage/lib" ldd',
             'compgen -G "/stage/lib/libcuda.so*"',
             "libggml-cuda no conserva dependencia al driver libcuda.so.1",
+            "Validate candidate outside CUDA build image",
+            "El runtime candidato conserva una dependencia a NCCL.",
+            "El runtime candidato tiene dependencias no resueltas fuera del contenedor CUDA.",
         ):
             self.assertIn(expected, source)
         self.assertNotIn("--gpus all", source)

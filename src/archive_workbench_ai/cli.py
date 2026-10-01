@@ -26,7 +26,7 @@ from .handoff import build_handoff_bundle, inspect_handoff_bundle
 from .model_store import inspect_model, pull_model
 from .protocol import load_request
 from .result_bundle import build_result_bundle
-from .runtime import PINNED_LLAMA_BUILD, PINNED_LLAMA_COMMIT, PINNED_LLAMA_TAG, detect_runtime, gpu_info
+from .runtime import PINNED_LLAMA_BUILD, PINNED_LLAMA_COMMIT, PINNED_LLAMA_TAG, detect_runtime_detailed, gpu_info
 from .runtime_manager import install_runtime, runtime_installation_report
 from .setup_app import serve_setup, setup_status
 from .managed_paths import default_bridge_root, managed_executable_candidates
@@ -37,11 +37,22 @@ def _print_json(payload: object) -> None:
 
 
 def _runtime_payload() -> dict[str, object]:
-    runtime = detect_runtime()
+    detection = detect_runtime_detailed()
+    failures = [
+        {
+            "executable": failure.executable,
+            "mode": failure.mode,
+            "returncode": failure.returncode,
+            "detail": failure.detail,
+        }
+        for failure in detection.failures
+    ]
+    runtime = detection.runtime
     if runtime is None:
         return {
             "available": False,
             "id": "llama.cpp",
+            "probe_failures": failures,
             "expected_tag": PINNED_LLAMA_TAG,
             "expected_build": PINNED_LLAMA_BUILD,
             "expected_commit": PINNED_LLAMA_COMMIT,
@@ -56,6 +67,7 @@ def _runtime_payload() -> dict[str, object]:
         "revision": runtime.revision,
         "validation_status": runtime.status,
         "version_text": runtime.version_text,
+        "probe_failures": failures,
         "expected_tag": PINNED_LLAMA_TAG,
         "expected_build": PINNED_LLAMA_BUILD,
         "expected_commit": PINNED_LLAMA_COMMIT,

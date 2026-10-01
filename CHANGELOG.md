@@ -1,3 +1,10 @@
+## 0.1.0.dev26 — runtime NVIDIA sin NCCL y diagnóstico estricto
+
+- recompila el candidato Linux/NVIDIA de llama.cpp b10903 con `GGML_CUDA_NCCL=OFF` para eliminar la dependencia accidental de `libnccl.so.2`;
+- valida el tar candidato fuera de la imagen CUDA de compilación y rechaza dependencias compartidas no resueltas distintas de `libcuda.so.1`, provista por el driver del host;
+- `detect_runtime` deja de declarar disponible un ejecutable cuyo `--version` termina con error y conserva el detalle de los probes fallidos en `runtime inspect`/`doctor`;
+- no cambia protocolos, handoff, modelos ni el catálogo publicado hasta construir y verificar el nuevo runtime candidato.
+
 ## 0.1.0.dev25 — reparación del análisis en binarios nativos
 
 - Corrige la carga del prompt `vision_describe_0_1.txt` en ejecutables PyInstaller sin depender del submódulo dinámico `archive_workbench_ai.prompts`.

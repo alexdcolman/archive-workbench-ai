@@ -48,3 +48,8 @@ Runtime y modelos viven fuera del repositorio. Las pruebas no deben depender de 
 ## Smoke de ejecutable nativo
 
 Toda candidata nativa debe ejecutar `analyze --backend mock` sobre el binario congelado de PyInstaller y verificar que se produzcan `result.zip` y `handoff.zip`. Este gate complementa `--version`, Setup y bridge, y detecta recursos o imports dinámicos ausentes del ejecutable.
+
+
+## Gate del runtime NVIDIA Linux
+
+El candidato Linux/NVIDIA se compila con NCCL deshabilitado (`GGML_CUDA_NCCL=OFF`) y se valida también fuera de la imagen CUDA usada para compilar. El tar no debe contener NCCL ni dependencias compartidas no resueltas distintas de `libcuda.so.1`, que pertenece al driver NVIDIA del host. `runtime inspect` y `doctor` sólo consideran disponible un runtime cuyo `--version` puede ejecutarse correctamente.

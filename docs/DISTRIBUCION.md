@@ -87,3 +87,8 @@ El runtime NVIDIA de Linux se construye en un workflow separado dentro de una im
 Durante la validación previa al release público, el código fuente de Archive Workbench AI puede permanecer privado. Los artefactos que necesita el recorrido cero-terminal se publican en `alexdcolman/archive-workbench-ai-dist`, release candidato publicado `v0.1.0.dev24`; las candidatas nativas posteriores pueden reutilizar ese runtime fijado sin recompilarlo.
 
 Ese repositorio contiene únicamente binarios/instaladores y checksums. No reemplaza el repositorio fuente ni altera el versionado del protocolo. La validación manual debe descargar exactamente esos assets.
+
+
+### Runtime Linux/NVIDIA
+
+El runtime administrado NVIDIA debe ser autocontenido respecto de CUDA/cuBLAS y no depender de NCCL. La única dependencia GPU que permanece deliberadamente fuera del tar es `libcuda.so.1`, resuelta por el driver NVIDIA del host. Los candidatos se validan en un entorno Linux limpio además del contenedor de compilación CUDA.

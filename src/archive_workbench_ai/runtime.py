@@ -22,13 +22,36 @@ class RuntimeCommand:
     status: str
 
 
-def _version_text(argv: Sequence[str]) -> str | None:
+@dataclass(frozen=True, slots=True)
+class RuntimeProbeFailure:
+    executable: str
+    mode: str
+    returncode: int | None
+    detail: str
+
+
+@dataclass(frozen=True, slots=True)
+class RuntimeDetection:
+    runtime: RuntimeCommand | None
+    failures: tuple[RuntimeProbeFailure, ...]
+
+
+def _version_probe(argv: Sequence[str]) -> tuple[str | None, int | None, str | None]:
     try:
         result = subprocess.run([*argv, "--version"], capture_output=True, text=True, timeout=10, check=False)
-    except (OSError, subprocess.SubprocessError):
+    except (OSError, subprocess.SubprocessError) as exc:
+        return None, None, str(exc)
+    text = (result.stdout + "\n" + result.stderr).strip() or None
+    if result.returncode != 0:
+        return text, result.returncode, text or f"llama.cpp terminó con código {result.returncode}"
+    return text, result.returncode, None
+
+
+def _version_text(argv: Sequence[str]) -> str | None:
+    text, returncode, error = _version_probe(argv)
+    if returncode != 0 or error is not None:
         return None
-    text = (result.stdout + "\n" + result.stderr).strip()
-    return text or None
+    return text
 
 
 def _parse_build(text: str | None) -> tuple[int | None, str | None]:
@@ -69,7 +92,7 @@ def _validation_status(build: int | None, revision: str | None) -> str:
     return "newer_unverified"
 
 
-def detect_runtime() -> RuntimeCommand | None:
+def detect_runtime_detailed() -> RuntimeDetection:
     explicit = os.environ.get("AW_AI_LLAMA_SERVER") or os.environ.get("AW_AI01_LLAMA_SERVER")
     candidates: list[tuple[tuple[str, ...], str, str]] = []
     if explicit:
@@ -91,17 +114,24 @@ def detect_runtime() -> RuntimeCommand | None:
     if llama:
         candidates.append(((llama, "serve"), llama, "llama-serve"))
 
+    failures: list[RuntimeProbeFailure] = []
     seen: set[tuple[str, ...]] = set()
     for prefix, executable, mode in candidates:
         if prefix in seen:
             continue
         seen.add(prefix)
-        version_argv = (executable,) if mode == "llama-server" else (executable,)
-        text = _version_text(version_argv)
+        text, returncode, error = _version_probe((executable,))
+        if error is not None:
+            failures.append(RuntimeProbeFailure(executable, mode, returncode, error))
+            continue
         build, revision = _parse_build(text)
         status = _validation_status(build, revision)
-        return RuntimeCommand(prefix, executable, mode, text, build, revision, status)
-    return None
+        return RuntimeDetection(RuntimeCommand(prefix, executable, mode, text, build, revision, status), tuple(failures))
+    return RuntimeDetection(None, tuple(failures))
+
+
+def detect_runtime() -> RuntimeCommand | None:
+    return detect_runtime_detailed().runtime
 
 
 def gpu_info() -> list[dict[str, object]]:

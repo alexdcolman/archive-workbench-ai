@@ -35,6 +35,7 @@ jobs:
               test "$(git -C /src rev-parse HEAD)" = "481c65f091f74c5e7089dd0a3a1cc6b50cced31e"
               cmake -S /src -B /build \
                 -DGGML_CUDA=ON \
+                -DGGML_CUDA_NCCL=OFF \
                 -DGGML_NATIVE=OFF \
                 -DGGML_CUDA_FA_QUANTS="q4_0-q4_0;q8_0-q8_0;f16-f16;bf16-bf16" \
                 -DCMAKE_EXE_LINKER_FLAGS=-Wl,--allow-shlib-undefined
@@ -80,6 +81,15 @@ jobs:
                 exit 1
               fi
 
+              if printf "%s\n" "$DYNAMIC_SECTION" | grep -F "libnccl.so"; then
+                echo "libggml-cuda conserva una dependencia NCCL no permitida para el runtime administrado." >&2
+                exit 1
+              fi
+              if compgen -G "/stage/lib/libnccl.so*" > /dev/null; then
+                echo "El staging contiene NCCL; este runtime debe ser autocontenido sin NCCL." >&2
+                exit 1
+              fi
+
               STUB_DIR="$CUDA_LIB_ROOT/stubs"
               test -f "$STUB_DIR/libcuda.so"
               mkdir -p /tmp/driver-stub
@@ -111,6 +121,45 @@ jobs:
             '
           test -s runtime-dist/llama-b10903-bin-ubuntu-cuda-12.8-x64.tar.gz
           cat runtime-dist/SHA256SUMS.txt
+      - name: Validate candidate outside CUDA build image
+        shell: bash
+        run: |
+          set -euxo pipefail
+          docker run --rm \
+            -v "$PWD/runtime-dist:/runtime-dist:ro" \
+            ubuntu:24.04 \
+            bash -lc '
+              set -euxo pipefail
+              apt-get update
+              DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends binutils ca-certificates
+              mkdir -p /candidate
+              tar -C /candidate -xzf /runtime-dist/llama-b10903-bin-ubuntu-cuda-12.8-x64.tar.gz
+              if find /candidate -type f -o -type l | grep -E "/libnccl\.so"; then
+                echo "El runtime candidato empaqueta NCCL y es inválido." >&2
+                exit 1
+              fi
+              CUDA_BACKEND=""
+              for candidate in /candidate/lib/libggml-cuda.so*; do
+                if [ -f "$candidate" ]; then CUDA_BACKEND="$candidate"; break; fi
+              done
+              test -n "$CUDA_BACKEND"
+              DYNAMIC_SECTION="$(readelf -d "$CUDA_BACKEND")"
+              if printf "%s\n" "$DYNAMIC_SECTION" | grep -F "libnccl.so"; then
+                echo "El runtime candidato conserva una dependencia a NCCL." >&2
+                exit 1
+              fi
+              LDD_OUTPUT="$(LD_LIBRARY_PATH=/candidate/lib ldd /candidate/bin/llama-server-bin || true)"
+              printf "%s\n" "$LDD_OUTPUT"
+              MISSING="$(printf "%s\n" "$LDD_OUTPUT" | grep "not found" || true)"
+              if [ -n "$MISSING" ]; then
+                UNEXPECTED="$(printf "%s\n" "$MISSING" | grep -v "libcuda.so.1 => not found" || true)"
+                if [ -n "$UNEXPECTED" ]; then
+                  printf "%s\n" "$UNEXPECTED" >&2
+                  echo "El runtime candidato tiene dependencias no resueltas fuera del contenedor CUDA." >&2
+                  exit 1
+                fi
+              fi
+            '
       - uses: actions/upload-artifact@v4
         with:
           name: llama-b10903-linux-nvidia-x64-candidate

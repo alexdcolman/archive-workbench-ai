@@ -92,3 +92,8 @@ El runtime NVIDIA candidato ya quedó construido desde el commit fijado y tiene 
 Los instaladores candidatos y el runtime se publican en `alexdcolman/archive-workbench-ai-dist` bajo `v0.1.0.dev24`. Las validaciones manuales deben comenzar exclusivamente desde esos assets descargables y, para Archive Workbench, desde el bundle administrado que conserva los digests publicados de las imágenes `1.3.0-rc1`.
 
 Antes de promover los instaladores a release público definitivo, registrar también el estado de firma de código. Las candidatas técnicas pueden construirse sin firma, pero no se debe describir como instalación sin fricción una app macOS sin firma/notarización ni un instalador Windows que todavía active advertencias de reputación o firma. Este gate de distribución es independiente de la funcionalidad del bridge y de la matriz manual obligatoria Windows CPU + Ubuntu CPU/GPU.
+
+
+### Gate adicional del runtime NVIDIA
+
+Antes de fijar un nuevo hash del runtime Linux/NVIDIA, el workflow debe compilar con NCCL deshabilitado, rechazar cualquier `libnccl.so*` empaquetada o enlazada y ejecutar la inspección de dependencias en un contenedor Linux limpio. El catálogo publicado no se actualiza hasta disponer del SHA-256 del artefacto candidato y una validación física satisfactoria.
