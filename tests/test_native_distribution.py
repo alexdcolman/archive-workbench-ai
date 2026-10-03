@@ -57,12 +57,12 @@ class NativeDistributionTests(unittest.TestCase):
         self.assertEqual(asset.filename, "llama-b10903-bin-ubuntu-cuda-12.8-x64.tar.gz")
         self.assertEqual(
             asset.sha256,
-            "d41bb204eb09995bfe387950435ddd84635aaaed28fade425d7d35c1bb2cee89",
+            "b0b02cf52a910e1ec1addf58491c9896dd73c06383e0d5ba8884a852658e56bf",
         )
         self.assertEqual(
             asset.url,
             "https://github.com/alexdcolman/archive-workbench-ai-dist/releases/download/"
-            "v0.1.0.dev24/llama-b10903-bin-ubuntu-cuda-12.8-x64.tar.gz",
+            "runtime-b10903-linux-nvidia-20261001/llama-b10903-bin-ubuntu-cuda-12.8-x64.tar.gz",
         )
 
     def test_downloaded_runtime_marker_uses_package_provenance(self) -> None:

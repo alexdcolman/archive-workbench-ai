@@ -53,7 +53,7 @@ Archive Workbench AI Setup ofrece la operación equivalente mediante interfaz gr
 
 En CPU x86_64 o arm64 se utiliza el binario publicado por `llama.cpp` para Ubuntu.
 
-En NVIDIA x86_64 se utiliza el runtime administrado precompilado `llama-b10903-bin-ubuntu-cuda-12.8-x64.tar.gz`, construido fuera de la computadora usuaria desde el commit fijado. Su SHA-256 es `d41bb204eb09995bfe387950435ddd84635aaaed28fade425d7d35c1bb2cee89`. El asset se distribuye desde el repositorio público de binarios `alexdcolman/archive-workbench-ai-dist`, release candidato `v0.1.0.dev24`. El controlador NVIDIA pertenece al sistema anfitrión y no se empaqueta.
+En NVIDIA x86_64 se utiliza el runtime administrado precompilado `llama-b10903-bin-ubuntu-cuda-12.8-x64.tar.gz`, construido fuera de la computadora usuaria desde el commit fijado. Su SHA-256 es `b0b02cf52a910e1ec1addf58491c9896dd73c06383e0d5ba8884a852658e56bf`. El asset se distribuye desde `alexdcolman/archive-workbench-ai-dist`, tag inmutable `runtime-b10903-linux-nvidia-20261001`. El controlador NVIDIA pertenece al sistema anfitrión y no se empaqueta; OpenMP y las bibliotecas CUDA/cuBLAS necesarias forman parte del runtime administrado.
 
 Archive Workbench AI Setup descarga ese runtime y no compila Git, CMake ni CUDA Toolkit en la computadora usuaria. Linux NVIDIA arm64 no se declara como plataforma administrada del primer release.
 

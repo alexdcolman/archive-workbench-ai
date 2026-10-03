@@ -29,7 +29,7 @@ EXP-01 y el handoff versionado son la frontera contractual. Archive Workbench AI
 
 La revisión fijada es `llama.cpp b10903`, commit `481c65f091f74c5e7089dd0a3a1cc6b50cced31e`.
 
-El runtime NVIDIA Linux x86_64 se construyó en GitHub Actions sin GPU del runner, pasó las validaciones de dependencias dinámicas y se identificó con SHA-256 `d41bb204eb09995bfe387950435ddd84635aaaed28fade425d7d35c1bb2cee89`. Para mantener el código privado durante los gates manuales, los binarios candidatos se publican separadamente en `alexdcolman/archive-workbench-ai-dist`.
+El runtime NVIDIA Linux x86_64 se construyó en GitHub Actions sin GPU del runner y pasó las validaciones de dependencias dinámicas dentro y fuera de la imagen CUDA. El candidato definitivo de este corte tiene SHA-256 `b0b02cf52a910e1ec1addf58491c9896dd73c06383e0d5ba8884a852658e56bf` y está publicado de forma inmutable en `alexdcolman/archive-workbench-ai-dist`, tag `runtime-b10903-linux-nvidia-20261001`.
 
 Esta matriz describe **rutas de instalación disponibles**, no una afirmación de que todos los perfiles/modelos hayan sido validados físicamente en cada combinación. El cierre H24 previo se realizó sobre Linux/NVIDIA RTX 3090. L12 mantiene pendiente su gate específico en hardware físico de 12 GB.
 
@@ -84,7 +84,7 @@ El runtime NVIDIA de Linux se construye en un workflow separado dentro de una im
 
 ## Repositorio público de binarios candidatos
 
-Durante la validación previa al release público, el código fuente de Archive Workbench AI puede permanecer privado. Los artefactos que necesita el recorrido cero-terminal se publican en `alexdcolman/archive-workbench-ai-dist`, release candidato publicado `v0.1.0.dev24`; las candidatas nativas posteriores pueden reutilizar ese runtime fijado sin recompilarlo.
+Durante la validación previa al release público, el código fuente de Archive Workbench AI puede permanecer privado. Los artefactos que necesita el recorrido cero-terminal se publican en `alexdcolman/archive-workbench-ai-dist`. La candidata nativa histórica dev24 permanece en `v0.1.0.dev24`; el runtime Linux/NVIDIA vigente se publica separadamente bajo el tag inmutable `runtime-b10903-linux-nvidia-20261001`, para permitir que candidatas nativas posteriores lo reutilicen sin recompilar CUDA.
 
 Ese repositorio contiene únicamente binarios/instaladores y checksums. No reemplaza el repositorio fuente ni altera el versionado del protocolo. La validación manual debe descargar exactamente esos assets.
 
@@ -97,4 +97,4 @@ El runtime administrado NVIDIA debe ser autocontenido respecto de CUDA/cuBLAS y 
 
 El ejecutable nativo `--onefile` inicia el compañero local en un proceso independiente con su propia extracción PyInstaller. Esto permite que el daemon sobreviva a la finalización de `bridge start` sin perder recursos empaquetados. El gate nativo verifica este comportamiento además del análisis mock directo.
 
-El candidato Linux/NVIDIA dev27 construido por Actions (`36908018496`) quedó validado físicamente con SHA-256 `b0b02cf52a910e1ec1addf58491c9896dd73c06383e0d5ba8884a852658e56bf`: no enlaza NCCL, resuelve OpenMP desde `libgomp.so.1` empaquetada y ejecuta llama.cpp b10903 en un host NVIDIA real. Este hash todavía no sustituye al asset del catálogo hasta publicarlo en una URL inmutable y reconstruir la candidata nativa que congele ese catálogo.
+El candidato Linux/NVIDIA dev27 construido por Actions (`36908018496`) quedó validado físicamente con SHA-256 `b0b02cf52a910e1ec1addf58491c9896dd73c06383e0d5ba8884a852658e56bf`: no enlaza NCCL, resuelve OpenMP desde `libgomp.so.1` empaquetada y ejecuta llama.cpp b10903 en un host NVIDIA real. Ese mismo tar se publicó bajo `runtime-b10903-linux-nvidia-20261001`, se descargó nuevamente desde la release pública y su checksum volvió a verificar. Dev29 congela esa URL+SHA en el catálogo; el gate siguiente es reconstruir las candidatas nativas con este catálogo.

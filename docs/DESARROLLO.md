@@ -57,3 +57,7 @@ El candidato Linux/NVIDIA se compila con NCCL deshabilitado (`GGML_CUDA_NCCL=OFF
 ### Gate de lifecycle del bridge congelado
 
 Las candidatas PyInstaller `--onefile` deben iniciar el daemon del bridge como una instancia independiente. `bridge start` fija `PYINSTALLER_RESET_ENVIRONMENT=1` al relanzar el mismo ejecutable congelado, porque el daemon sobrevive al proceso iniciador y no puede reutilizar su directorio temporal `_MEI`. El workflow nativo ejecuta un smoke específico que entrega un job al daemon después de que `bridge start` terminó y rechaza pérdidas de prompts/esquemas empaquetados.
+
+## Gate dev29 — promoción de runtime publicado
+
+La promoción del runtime Linux/NVIDIA exige tres identidades coincidentes: tar validado físicamente, SHA-256 fijado y URL inmutable pública. El asset vigente es `runtime-b10903-linux-nvidia-20261001/llama-b10903-bin-ubuntu-cuda-12.8-x64.tar.gz`, SHA-256 `b0b02cf52a910e1ec1addf58491c9896dd73c06383e0d5ba8884a852658e56bf`. Una vez cambiado el catálogo, se reconstruyen los nativos; el workflow CUDA no se repite salvo cambio material del runtime.

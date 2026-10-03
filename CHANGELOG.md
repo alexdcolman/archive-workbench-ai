@@ -1,3 +1,10 @@
+## 0.1.0.dev29 — promoción del runtime Linux/NVIDIA validado
+
+- Fija el catálogo Linux x86_64/NVIDIA al asset inmutable `runtime-b10903-linux-nvidia-20261001` publicado en `alexdcolman/archive-workbench-ai-dist`.
+- Actualiza el SHA-256 administrado a `b0b02cf52a910e1ec1addf58491c9896dd73c06383e0d5ba8884a852658e56bf`, verificado nuevamente tras descargar el asset desde la release pública.
+- Registra como cerrados el smoke nativo dev28 y la validación integrada Linux con `bridge start` normal, que produjo 18 propuestas desde Archive Workbench.
+- No recompila llama.cpp, no cambia modelos, protocolos, handoff ni imágenes Docker de Archive Workbench.
+
 ## 0.1.0.dev28 — lifecycle del bridge PyInstaller onefile
 
 - El daemon congelado iniciado por `bridge start` se relanza como instancia PyInstaller independiente mediante `PYINSTALLER_RESET_ENVIRONMENT=1`, evitando que pierda prompts/esquemas cuando termina el proceso iniciador y se elimina su `_MEI`.

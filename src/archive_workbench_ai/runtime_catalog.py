@@ -7,7 +7,7 @@ PINNED_LLAMA_TAG = "b10903"
 PINNED_LLAMA_COMMIT = "481c65f091f74c5e7089dd0a3a1cc6b50cced31e"
 
 DIST_REPOSITORY = "alexdcolman/archive-workbench-ai-dist"
-DIST_RELEASE_TAG = "v0.1.0.dev24"
+DIST_RELEASE_TAG = "runtime-b10903-linux-nvidia-20261001"
 _DIST_BASE = f"https://github.com/{DIST_REPOSITORY}/releases/download/{DIST_RELEASE_TAG}"
 
 
@@ -56,7 +56,7 @@ RUNTIME_PACKAGES: tuple[RuntimePackage, ...] = (
         "linux",
         "x86_64",
         "nvidia",
-        (_managed_asset("llama-b10903-bin-ubuntu-cuda-12.8-x64.tar.gz", "d41bb204eb09995bfe387950435ddd84635aaaed28fade425d7d35c1bb2cee89"),),
+        (_managed_asset("llama-b10903-bin-ubuntu-cuda-12.8-x64.tar.gz", "b0b02cf52a910e1ec1addf58491c9896dd73c06383e0d5ba8884a852658e56bf"),),
         source="archive-workbench-ai-dist",
     ),
     RuntimePackage("linux", "aarch64", "nvidia", source_build=True),

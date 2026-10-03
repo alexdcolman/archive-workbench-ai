@@ -85,7 +85,7 @@ La guía completa por plataforma está en [`docs/INSTALACION.md`](docs/INSTALACI
 
 La distribución administrada abre **Archive Workbench AI Setup** como una interfaz local en el navegador, escuchando sólo en `127.0.0.1`. Desde allí se consulta el estado del runtime, los modelos y el compañero local, y se inicia explícitamente la preparación de L12/H24 o una reparación. Abrir el Setup no descarga ni modifica nada por sí mismo.
 
-En Linux/NVIDIA, el Setup administrado bloquea cualquier compilación desde fuente: hasta que el runtime CUDA precompilado y verificado quede publicado en el catálogo, esa preparación se informa como pendiente en lugar de exigir una toolchain local.
+En Linux/NVIDIA, el Setup administrado bloquea cualquier compilación desde fuente y utiliza el runtime CUDA precompilado fijado en el catálogo. La computadora usuaria aporta únicamente el controlador NVIDIA compatible; no necesita Git, CMake ni CUDA Toolkit para preparar el runtime administrado.
 
 ## Uso con Archive Workbench
 
