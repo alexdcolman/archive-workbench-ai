@@ -1,3 +1,10 @@
+## 0.1.0.dev30 — probe de lifecycle no destructivo en Windows
+
+- Corrige `bridge status/start/stop` en Windows: el chequeo de PID deja de usar `os.kill(pid, 0)`, que en Windows puede terminar el proceso, y usa `OpenProcess` + `WaitForSingleObject` sin enviar señales.
+- Mantiene sin cambios el comportamiento POSIX, el lifecycle PyInstaller dev28, el catálogo/runtime dev29, modelos y contratos.
+- El workflow nativo de Windows imprime `bridge.log` si `bridge start` falla antes de abortar el job.
+- Agrega regresiones unitarias para proceso vivo/terminado y para impedir que la rama Windows vuelva a invocar `os.kill`.
+
 ## 0.1.0.dev29 — promoción del runtime Linux/NVIDIA validado
 
 - Fija el catálogo Linux x86_64/NVIDIA al asset inmutable `runtime-b10903-linux-nvidia-20261001` publicado en `alexdcolman/archive-workbench-ai-dist`.

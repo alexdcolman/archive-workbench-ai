@@ -107,3 +107,7 @@ El candidato Linux/NVIDIA dev27 construido por Actions (`36908018496`) quedó va
 ## Cierre dev29 del runtime Linux/NVIDIA
 
 El runtime Linux x86_64/NVIDIA validado en el run `36908018496` se publicó en `alexdcolman/archive-workbench-ai-dist` bajo el tag inmutable `runtime-b10903-linux-nvidia-20261001`. Su SHA-256 es `b0b02cf52a910e1ec1addf58491c9896dd73c06383e0d5ba8884a852658e56bf` y fue verificado otra vez después de descargar el asset publicado. Dev29 fija esa URL+SHA en el catálogo. No se debe reconstruir CUDA para este paso; deben reconstruirse las candidatas nativas que congelan el catálogo y repetir sus smokes antes de retomar la validación cero-terminal.
+
+## Gate dev30 de Windows
+
+El run nativo dev29 `37147252924` dejó verdes Linux x64 y macOS Intel/Apple Silicon, pero Windows x64 falló al iniciar el bridge. El fallo no corresponde al catálogo ni al runtime: el binario dev29 se construyó y reportó versión correctamente. Dev30 corrige el probe de PID de Windows para que sea no destructivo y exige volver a ejecutar el job nativo Windows (y luego la matriz nativa completa antes de promoción). Si `bridge start` vuelve a fallar, el workflow debe materializar el contenido de `bridge.log` en el log de Actions antes de abortar.

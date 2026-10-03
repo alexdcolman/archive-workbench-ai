@@ -81,7 +81,18 @@ jobs:
           python -m PyInstaller --clean --onefile --name aw-ai --collect-data archive_workbench_ai packaging/aw_ai_entry.py
           .\dist\aw-ai.exe --version
           .\dist\aw-ai.exe setup --status-json | Out-File -Encoding utf8 native-windows-status.json
+          $PSNativeCommandUseErrorActionPreference = $false
           .\dist\aw-ai.exe bridge start --json | Out-File -Encoding utf8 native-windows-bridge-start.json
+          $bridgeStartExit = $LASTEXITCODE
+          $PSNativeCommandUseErrorActionPreference = $true
+          if ($bridgeStartExit -ne 0) {
+            $bridgeLog = Join-Path $env:LOCALAPPDATA "archive-workbench-ai\bridge\bridge.log"
+            if (Test-Path $bridgeLog) {
+              Write-Host "== native Windows bridge.log =="
+              Get-Content $bridgeLog
+            }
+            throw "Native bridge start failed with exit code $bridgeStartExit"
+          }
           .\dist\aw-ai.exe bridge status --json | Out-File -Encoding utf8 native-windows-bridge-status.json
           .\dist\aw-ai.exe bridge stop --json | Out-File -Encoding utf8 native-windows-bridge-stop.json
           python scripts\make_demo_job.py --output native-windows-smoke

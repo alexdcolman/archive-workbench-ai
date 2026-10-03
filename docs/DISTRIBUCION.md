@@ -98,3 +98,7 @@ El runtime administrado NVIDIA debe ser autocontenido respecto de CUDA/cuBLAS y 
 El ejecutable nativo `--onefile` inicia el compañero local en un proceso independiente con su propia extracción PyInstaller. Esto permite que el daemon sobreviva a la finalización de `bridge start` sin perder recursos empaquetados. El gate nativo verifica este comportamiento además del análisis mock directo.
 
 El candidato Linux/NVIDIA dev27 construido por Actions (`36908018496`) quedó validado físicamente con SHA-256 `b0b02cf52a910e1ec1addf58491c9896dd73c06383e0d5ba8884a852658e56bf`: no enlaza NCCL, resuelve OpenMP desde `libgomp.so.1` empaquetada y ejecuta llama.cpp b10903 en un host NVIDIA real. Ese mismo tar se publicó bajo `runtime-b10903-linux-nvidia-20261001`, se descargó nuevamente desde la release pública y su checksum volvió a verificar. Dev29 congela esa URL+SHA en el catálogo; el gate siguiente es reconstruir las candidatas nativas con este catálogo.
+
+### Estado de proceso del compañero en Windows
+
+La comprobación de lifecycle del bridge es específica por plataforma. En POSIX puede usarse `os.kill(pid, 0)` como probe de existencia. En Windows el paquete no envía esa señal: abre el proceso con la API Win32 y consulta su estado mediante una espera de cero milisegundos, de modo que `bridge status` no pueda terminar accidentalmente el daemon que intenta observar.

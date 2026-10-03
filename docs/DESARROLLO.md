@@ -61,3 +61,7 @@ Las candidatas PyInstaller `--onefile` deben iniciar el daemon del bridge como u
 ## Gate dev29 — promoción de runtime publicado
 
 La promoción del runtime Linux/NVIDIA exige tres identidades coincidentes: tar validado físicamente, SHA-256 fijado y URL inmutable pública. El asset vigente es `runtime-b10903-linux-nvidia-20261001/llama-b10903-bin-ubuntu-cuda-12.8-x64.tar.gz`, SHA-256 `b0b02cf52a910e1ec1addf58491c9896dd73c06383e0d5ba8884a852658e56bf`. Una vez cambiado el catálogo, se reconstruyen los nativos; el workflow CUDA no se repite salvo cambio material del runtime.
+
+## Gate dev30 — lifecycle del bridge en Windows
+
+El run multiplataforma dev29 `37147252924` cerró Linux x64 y ambos macOS, pero Windows falló en `bridge start`. La causa se aisló en `_pid_alive()`: `os.kill(pid, 0)` conserva semántica de probe en POSIX, pero en Windows los valores que no son eventos especiales de consola se tramitan mediante `TerminateProcess`. Dev30 usa un probe Win32 no destructivo (`OpenProcess` con derecho `SYNCHRONIZE` + `WaitForSingleObject(..., 0)`) y reserva `os.kill(pid, 0)` para POSIX. El workflow Windows vuelca `bridge.log` si el start nativo falla.

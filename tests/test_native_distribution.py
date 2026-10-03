@@ -109,6 +109,19 @@ class NativeDistributionTests(unittest.TestCase):
         self.assertGreaterEqual(source.count(" analyze "), 3)
 
 
+    def test_windows_bridge_pid_probe_is_non_destructive(self) -> None:
+        source = (ROOT / "src" / "archive_workbench_ai" / "bridge.py").read_text(encoding="utf-8")
+        self.assertIn("def _pid_alive_windows", source)
+        self.assertIn("OpenProcess", source)
+        self.assertIn("WaitForSingleObject", source)
+        self.assertIn('if os.name == "nt":', source)
+
+    def test_windows_native_build_prints_bridge_log_on_start_failure(self) -> None:
+        source = (ROOT / ".github" / "workflows" / "build-native.yml").read_text(encoding="utf-8")
+        self.assertIn("native Windows bridge.log", source)
+        self.assertIn("Get-Content $bridgeLog", source)
+        self.assertIn("Native bridge start failed with exit code", source)
+
     def test_frozen_bridge_daemon_resets_pyinstaller_environment(self) -> None:
         source = (ROOT / "src" / "archive_workbench_ai" / "bridge.py").read_text(encoding="utf-8")
         self.assertIn('child_env["PYINSTALLER_RESET_ENVIRONMENT"] = "1"', source)

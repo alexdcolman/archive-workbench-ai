@@ -15,6 +15,8 @@ from archive_workbench_ai.bridge import (
     initialize_bridge,
     process_job,
     process_pending,
+    _pid_alive,
+    _pid_alive_windows,
 )
 from archive_workbench_ai.errors import InvalidInputError
 
@@ -148,6 +150,34 @@ class BridgeTests(unittest.TestCase):
             result = cleanup_bridge_jobs(root, now=job.stat().st_mtime + 8 * 24 * 60 * 60)
             self.assertEqual(result["failed"], 1)
             self.assertFalse(job.exists())
+
+    def test_windows_pid_probe_uses_wait_without_killing_process(self) -> None:
+        kernel32 = mock.Mock()
+        kernel32.OpenProcess.return_value = 1234
+        kernel32.WaitForSingleObject.return_value = 0x00000102
+
+        self.assertTrue(_pid_alive_windows(4321, kernel32=kernel32))
+        kernel32.OpenProcess.assert_called_once_with(0x00100000, False, 4321)
+        kernel32.WaitForSingleObject.assert_called_once_with(1234, 0)
+        kernel32.CloseHandle.assert_called_once_with(1234)
+
+    def test_windows_pid_probe_reports_terminated_process(self) -> None:
+        kernel32 = mock.Mock()
+        kernel32.OpenProcess.return_value = 5678
+        kernel32.WaitForSingleObject.return_value = 0x00000000
+
+        self.assertFalse(_pid_alive_windows(8765, kernel32=kernel32))
+        kernel32.CloseHandle.assert_called_once_with(5678)
+
+    def test_pid_alive_routes_windows_to_non_destructive_probe(self) -> None:
+        with (
+            mock.patch("archive_workbench_ai.bridge.os.name", "nt"),
+            mock.patch("archive_workbench_ai.bridge._pid_alive_windows", return_value=True) as probe,
+            mock.patch("archive_workbench_ai.bridge.os.kill") as kill,
+        ):
+            self.assertTrue(_pid_alive(99))
+        probe.assert_called_once_with(99)
+        kill.assert_not_called()
 
     def test_frozen_start_uses_current_executable_without_python_module_switch(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
